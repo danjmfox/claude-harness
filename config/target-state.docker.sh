@@ -30,5 +30,4 @@ REQUIRED_SYMLINKS=(
 	"${HOME}/.claude/CLAUDE.md:${REPO_ROOT}/claude/CLAUDE.md"
 	"${HOME}/.claude/PRINCIPLES.md:${REPO_ROOT}/claude/PRINCIPLES.md"
 	"${HOME}/.claude/stack.md:${REPO_ROOT}/claude/stack.md"
-	"${HOME}/.claude/projects.md:${REPO_ROOT}/claude/projects.md"
 )
