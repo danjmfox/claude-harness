@@ -70,7 +70,10 @@ expect blocked "${DOTFILES}" 'git add .'
 expect allowed "${DOTFILES}" 'git add src/foo.js'
 expect allowed "${DOTFILES}" 'git add .gitignore'
 
-# Trunk commits: dotfiles is exempt, other repos are not.
+# Trunk commits: an opted-out repo is exempt, others are not. Naming the exemption here
+# rather than in the guard keeps the published hook free of anyone's repo names.
+GIT_GUARD_TRUNK_OK="$(basename "${REPO_ROOT}")"
+export GIT_GUARD_TRUNK_OK
 expect allowed "${DOTFILES}" 'git commit -m x'
 if [[ -d ${OTHER}/.git ]]; then
 	expect blocked "${OTHER}" 'git commit -m x'

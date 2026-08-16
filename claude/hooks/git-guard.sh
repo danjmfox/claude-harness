@@ -39,8 +39,10 @@ TARGET="$(target_dir)"
 BRANCH="$(git -C "${TARGET}" rev-parse --abbrev-ref HEAD 2>/dev/null || echo none)"
 REPO="$(basename "$(git -C "${TARGET}" rev-parse --show-toplevel 2>/dev/null || echo none)")"
 
-# Repos where working directly on the trunk is accepted practice. Empty this to tighten.
-TRUNK_OK=" dotfiles "
+# Repos where working directly on the trunk is accepted practice. Space-separated repo
+# basenames in GIT_GUARD_TRUNK_OK; empty by default, so the rule applies everywhere until
+# you opt a repo out.
+TRUNK_OK=" ${GIT_GUARD_TRUNK_OK-} "
 
 on_trunk() { [[ ${BRANCH} == main || ${BRANCH} == master ]]; }
 trunk_exempt() { [[ ${TRUNK_OK} == *" ${REPO} "* ]]; }

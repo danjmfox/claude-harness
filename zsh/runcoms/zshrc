@@ -20,10 +20,14 @@ bindkey -e
 autoload -Uz compinit
 mkdir -p "${XDG_CACHE_HOME:-$HOME/.cache}/zsh"
 zcompdump="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompdump"
+# -u skips compinit's interactive insecure-directory prompt. Without it, a non-interactive
+# invocation (CI, a test suite sourcing this file directly) has no tty to answer the prompt on
+# and compinit aborts outright rather than degrading — observed on the GitHub Actions runner,
+# not reproducible on macOS, where fpath ownership happened not to trip the check.
 if [[ -n ${zcompdump}(#qN.mh+24) ]]; then
-  compinit -d "${zcompdump}"
+  compinit -u -d "${zcompdump}"
 else
-  compinit -C -d "${zcompdump}"
+  compinit -C -u -d "${zcompdump}"
 fi
 
 # --- Plugins ---
