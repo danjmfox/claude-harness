@@ -1,0 +1,2 @@
+description = "Approve the current plan or proposal and proceed with execution. Use as a low-friction signal."
+prompt = "Please activate the 'go' skill and proceed with the next step of the plan or proposal: {{args}}"

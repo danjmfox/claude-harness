@@ -1,0 +1,101 @@
+# --- History ---
+HISTFILE="${HOME}/.zsh_history"
+HISTSIZE=10000
+SAVEHIST=50000
+setopt bang_hist extended_history share_history \
+       hist_expire_dups_first hist_ignore_dups hist_ignore_space hist_verify
+
+# --- Directory ---
+setopt auto_cd auto_pushd pushd_ignore_dups pushd_to_home
+DIRSTACKSIZE=20
+
+# --- Shell options ---
+setopt correct no_bg_nice no_hup no_check_jobs long_list_jobs interactive_comments
+autoload -Uz bracketed-paste-magic && zle -N bracketed-paste bracketed-paste-magic
+
+# --- Editor ---
+bindkey -e
+
+# --- Completion ---
+autoload -Uz compinit
+mkdir -p "${XDG_CACHE_HOME:-$HOME/.cache}/zsh"
+zcompdump="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompdump"
+if [[ -n ${zcompdump}(#qN.mh+24) ]]; then
+  compinit -d "${zcompdump}"
+else
+  compinit -C -d "${zcompdump}"
+fi
+
+# --- Plugins ---
+HISTORY_SUBSTRING_SEARCH_ENSURE_UNIQUE=1
+HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_FOUND='bg=cyan,fg=black,bold'
+HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_NOT_FOUND='bg=red,fg=white,bold'
+source "${DOTFILES}/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh"
+source "${DOTFILES}/zsh/plugins/zsh-history-substring-search/zsh-history-substring-search.zsh"
+source "${DOTFILES}/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+
+# History substring search keybindings (must be after plugins)
+# Bind both terminfo (application cursor keys mode) and raw codes (cursor mode, most terminals)
+zmodload zsh/terminfo
+[[ -n "${terminfo[kcuu1]}" ]] && bindkey "${terminfo[kcuu1]}" history-substring-search-up
+[[ -n "${terminfo[kcud1]}" ]] && bindkey "${terminfo[kcud1]}" history-substring-search-down
+bindkey '^[[A' history-substring-search-up
+bindkey '^[[B' history-substring-search-down
+bindkey '^P'   history-substring-search-up
+bindkey '^N'   history-substring-search-down
+
+# Word navigation (Option+Arrow — covers both iTerm escape-key and raw ANSI variants)
+bindkey '\e[1;3D' backward-word   # Option+Left  (ANSI modifier code)
+bindkey '\e[1;3C' forward-word    # Option+Right
+bindkey '\eb'     backward-word   # Option+Left  (ESC+b, when Option acts as +Esc)
+bindkey '\ef'     forward-word    # Option+Right (ESC+f)
+
+# Shift+Arrow: word navigation (Left/Right) and history search (Up/Down)
+bindkey '\e[1;2D' backward-word                  # Shift+Left
+bindkey '\e[1;2C' forward-word                   # Shift+Right
+bindkey '\e[1;2A' history-substring-search-up    # Shift+Up
+bindkey '\e[1;2B' history-substring-search-down  # Shift+Down
+
+# Home/End — portable (terminfo + raw ANSI fallback)
+[[ -n "${terminfo[khome]}" ]] && bindkey "${terminfo[khome]}" beginning-of-line
+[[ -n "${terminfo[kend]}"  ]] && bindkey "${terminfo[kend]}"  end-of-line
+bindkey '\e[H'  beginning-of-line   # Home (xterm)
+bindkey '\e[F'  end-of-line         # End  (xterm)
+bindkey '\e[1~' beginning-of-line   # Home (some Linux terminals)
+bindkey '\e[4~' end-of-line         # End  (some Linux terminals)
+
+# --- Prompt ---
+eval "$(starship init zsh)"
+
+# --- Tools ---
+eval "$(mise activate zsh)"
+if (( ${+commands[direnv]} )); then
+  eval "$(direnv hook zsh)"
+fi
+if (( ${+commands[fzf]} )); then
+  eval "$(fzf --zsh)"
+fi
+
+# --- Aliases ---
+alias ls='eza'
+alias ll='eza -lh'
+alias la='eza -lha'
+alias lt='eza --tree'
+
+
+# Telemetry wrapper, employer tier. Phase 2 moves this to the overlay's zshrc.local
+# and this block goes with it.
+if [[ -f "${DOTFILES}/work/otel-wrapper.zsh" ]]; then
+  source "${DOTFILES}/work/otel-wrapper.zsh"
+fi
+
+# bun completions (PNPM_HOME/BUN_INSTALL paths live in zprofile)
+if [[ -s "$HOME/.bun/_bun" ]]; then
+  source "$HOME/.bun/_bun"
+fi
+
+# Optional overlay seam — last, so it can override anything above. An `if` rather
+# than `cond && source`, which would return non-zero from zshrc when absent.
+if [[ -f "${DOTFILES}/local/zshrc.local" ]]; then
+  source "${DOTFILES}/local/zshrc.local"
+fi

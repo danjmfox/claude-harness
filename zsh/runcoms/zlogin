@@ -1,0 +1,7 @@
+# Compile zcompdump in background to speed up future shell starts
+{
+  zcompdump="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompdump"
+  if [[ -s "$zcompdump" && (! -s "${zcompdump}.zwc" || "$zcompdump" -nt "${zcompdump}.zwc") ]]; then
+    zcompile "$zcompdump"
+  fi
+} &!

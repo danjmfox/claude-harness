@@ -1,0 +1,2 @@
+description = "Think through, draft, and create a Decision Record using drctl. Use when facing a significant architectural, tooling, or process decision."
+prompt = "Please activate the 'adr' skill and use it to help me think through and draft a Decision Record for: {{args}}"

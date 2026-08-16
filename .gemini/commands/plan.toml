@@ -1,0 +1,2 @@
+description = "Create a persistent, resumable task plan with tracking files in .claude/."
+prompt = "Please activate the 'plan' skill and use it to create or resume a persistent task plan for: {{args}}"

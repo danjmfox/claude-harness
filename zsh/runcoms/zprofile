@@ -1,0 +1,51 @@
+# Browser
+if [[ -z "$BROWSER" && "$OSTYPE" == darwin* ]]; then
+  export BROWSER='open'
+fi
+
+# Editors
+[[ -z "$EDITOR" ]] && export EDITOR='nano'
+[[ -z "$VISUAL" ]] && export VISUAL='nano'
+[[ -z "$PAGER" ]] && export PAGER='less'
+
+# Locale
+[[ -z "$LANG" ]] && export LANG='en_US.UTF-8'
+
+# Paths — no duplicates
+typeset -gU cdpath fpath mailpath path
+export PNPM_HOME="$HOME/Library/pnpm"
+export BUN_INSTALL="$HOME/.bun"
+path=(
+  $HOME/{,s}bin(N)
+  /opt/{homebrew,local}/{,s}bin(N)
+  /usr/local/{,s}bin(N)
+  /Applications/Obsidian.app/Contents/MacOS
+  # nWave DES shims — MUST precede .local/bin: nwave-ai's pipx entry points are
+  # broken by a packaging bug (des module not shipped in the wheel) and
+  # regenerate on every pipx install; the working shims live in .claude/bin
+  $HOME/.claude/bin(N)
+  $HOME/.local/bin
+  $PNPM_HOME
+  $BUN_INSTALL/bin(N)
+  $path
+)
+
+# GitHub Packages token, from Keychain — never written to a file.
+# Work machines only: the keychain item is absent elsewhere, so this is a no-op there.
+# The 2>&- is an expected-absence branch, not a silenced diagnostic — the test below is the check.
+if (( $+commands[security] )); then
+  GITHUB_TOKEN="$(security find-generic-password -w -s GITHUB_TOKEN 2>&-)"
+  if [[ -n "$GITHUB_TOKEN" ]]; then
+    export GITHUB_TOKEN
+  else
+    unset GITHUB_TOKEN
+  fi
+fi
+
+# Less
+if [[ -z "$LESS" ]]; then
+  export LESS='-g -i -M -R -S -w -X -z-4'
+fi
+if [[ -z "$LESSOPEN" ]] && (( $#commands[(i)lesspipe(|.sh)] )); then
+  export LESSOPEN="| /usr/bin/env $commands[(i)lesspipe(|.sh)] %s 2>&-"
+fi

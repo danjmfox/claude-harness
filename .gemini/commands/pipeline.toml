@@ -1,0 +1,2 @@
+description = "Fetch and fix GitLab CI pipeline failures for the current branch using glab."
+prompt = "Please activate the 'pipeline' skill and use it to fetch and fix the failures from the latest GitLab CI pipeline for the current branch: {{args}}"

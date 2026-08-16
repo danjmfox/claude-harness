@@ -1,0 +1,2 @@
+description = "Write a failing Vitest test for a described behaviour without any implementation."
+prompt = "Please activate the 'red' skill and use it to write a failing test for: {{args}}"

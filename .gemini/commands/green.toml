@@ -1,0 +1,2 @@
+description = "Write the minimal implementation to make failing tests pass without over-engineering."
+prompt = "Please activate the 'green' skill and write the minimal implementation to make the failing tests pass: {{args}}"

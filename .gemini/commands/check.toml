@@ -1,0 +1,2 @@
+description = "Run the full quality gate (lint, typecheck, tests, coverage) and summarise results."
+prompt = "Please activate the 'check' skill and use it to run the full quality gate for the current project and summarise the results: {{args}}"

@@ -1,0 +1,2 @@
+description = "Apply engineering principles to a decision or question, surface tensions, and reason to a recommendation."
+prompt = "Please activate the 'principles' skill and use it to apply engineering principles to the following decision or question: {{args}}"

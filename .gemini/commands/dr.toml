@@ -1,0 +1,2 @@
+description = "Manage Decision Record lifecycle using drctl — list, advance states, review, link, and index records."
+prompt = "Please activate the 'dr' skill and use it to manage the Decision Record lifecycle: {{args}}"

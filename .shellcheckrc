@@ -1,0 +1,5 @@
+# SC2310/SC2312: flag functions invoked in conditions (set -e disabled) and
+# command substitutions that "mask" a return value. The function-in-if and
+# capture-then-test patterns here are intentional and idiomatic; these checks
+# are style noise, not defects. Disabled repo-wide.
+disable=SC2310,SC2312

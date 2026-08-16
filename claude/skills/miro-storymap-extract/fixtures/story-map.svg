@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500">
+  <rect x="0" y="0" width="800" height="500" fill="#ffffff"/>
+  <path d="M10 10 L790 10" stroke="#cccccc"/>
+  <text x="100" y="20" class="frame-title">Advisor Connect — Story Map</text>
+  <g transform="translate(100,0)">
+    <!-- Journey row (yellow), abs y=40 -->
+    <foreignObject x="0" y="40" width="300" height="40">
+      <div xmlns="http://www.w3.org/1999/xhtml"><style>.j{fill:#ffd}</style><p>Platform</p></div>
+    </foreignObject>
+    <foreignObject x="350" y="40" width="250" height="40">
+      <div xmlns="http://www.w3.org/1999/xhtml"><p>Session Management</p></div>
+    </foreignObject>
+    <!-- Step row (blue): nested translate adds y=60 -> abs y=100 -->
+    <g transform="translate(0,60)">
+      <foreignObject x="20" y="40" width="120" height="30"><div xmlns="http://www.w3.org/1999/xhtml"><p>Platform</p></div></foreignObject>
+      <foreignObject x="200" y="40" width="120" height="30"><div xmlns="http://www.w3.org/1999/xhtml"><p>Agents</p></div></foreignObject>
+      <foreignObject x="380" y="40" width="120" height="30"><div xmlns="http://www.w3.org/1999/xhtml"><p>Session</p></div></foreignObject>
+      <foreignObject x="520" y="40" width="120" height="30"><div xmlns="http://www.w3.org/1999/xhtml"><p>New task</p></div></foreignObject>
+    </g>
+    <!-- Data cards: nested translate adds y=160 -->
+    <g transform="translate(0,160)">
+      <!-- Walking Skeleton lane: card y offset 40 -> abs y=200 -->
+      <foreignObject x="20" y="40" width="160" height="80">
+        <div xmlns="http://www.w3.org/1999/xhtml"><style>.c{font:12px sans-serif}</style><p>Auth flow</p><p>- 94fe8d3 ( #191 )</p><span>AVA-5532</span><span>Done</span></div>
+      </foreignObject>
+      <foreignObject x="380" y="40" width="160" height="80">
+        <div xmlns="http://www.w3.org/1999/xhtml"><p>Create session</p><p>- a1b2c3d ( #195 )</p><span>AVA-5540</span><span>In Progress</span></div>
+      </foreignObject>
+      <!-- MVP lane: card y offset 180 -> abs y=340 -->
+      <foreignObject x="200" y="180" width="160" height="80">
+        <div xmlns="http://www.w3.org/1999/xhtml"><p>Agent list</p><span>AVA-5550</span><span>To Do</span></div>
+      </foreignObject>
+      <foreignObject x="520" y="180" width="160" height="80">
+        <div xmlns="http://www.w3.org/1999/xhtml"><p>New task form</p><p>- deadbee ( #200 )</p><span>AVA-5560</span><span>Peer Review</span></div>
+      </foreignObject>
+    </g>
+    <!-- Swimlane labels: free <text>, abs x=10 -->
+    <text x="-90" y="200" class="lane">Walking Skeleton</text>
+    <text x="-90" y="340" class="lane">MVP</text>
+  </g>
+</svg>

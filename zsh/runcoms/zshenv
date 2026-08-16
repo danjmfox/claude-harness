@@ -1,0 +1,12 @@
+# Resolve dotfiles root from this file's real path (follows symlink).
+# %x = path of this file; :A = resolve symlink to absolute path;
+# :h:h:h = dirname three times (runcoms → zsh → dotfiles root)
+export DOTFILES="${${(%):-%x}:A:h:h:h}"
+
+# Source zprofile for interactive non-login shells (e.g. terminal emulator tabs).
+# Excludes non-interactive subshells (scripts, editor integrations) to avoid
+# PATH mutations and env side-effects in unexpected contexts.
+if [[ -o INTERACTIVE && ! -o LOGIN && -s "${ZDOTDIR:-$HOME}/.zprofile" ]]; then
+  source "${ZDOTDIR:-$HOME}/.zprofile"
+fi
+. "$HOME/.cargo/env"

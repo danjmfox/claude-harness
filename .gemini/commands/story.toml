@@ -1,0 +1,2 @@
+description = "Scaffold a user story with who+what+why, acceptance criteria, and priority rationale."
+prompt = "Please activate the 'story' skill and use it to draft a user story for: {{args}}"

@@ -1,0 +1,2 @@
+description = "Self-review staged changes or a full branch diff to catch issues before committing or pushing."
+prompt = "Please activate the 'review' skill and use it to review the changes: {{args}}"

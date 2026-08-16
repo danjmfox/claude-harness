@@ -1,0 +1,2 @@
+description = "Improve code quality without changing behaviour while keeping tests green."
+prompt = "Please activate the 'refactor' skill and use it to improve the code quality of the current implementation: {{args}}"

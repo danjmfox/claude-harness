@@ -1,0 +1,4 @@
+[global]
+load_dotenv = false
+strict_env = true
+warn_timeout = "5s"
