@@ -9,4 +9,4 @@ export DOTFILES="${${(%):-%x}:A:h:h:h}"
 if [[ -o INTERACTIVE && ! -o LOGIN && -s "${ZDOTDIR:-$HOME}/.zprofile" ]]; then
   source "${ZDOTDIR:-$HOME}/.zprofile"
 fi
-. "$HOME/.cargo/env"
+[[ -s "$HOME/.cargo/env" ]] && . "$HOME/.cargo/env"

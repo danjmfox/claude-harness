@@ -162,7 +162,13 @@ selected_config_links() {
 	specs=("${CONFIG_LINKS[@]}")
 
 	# Sourced before the profile loop: an overlay may append to CONFIG_LINKS_<profile>.
+	# Two paths, matching zshrc's seam: local/links.sh when this is claude-harness's own
+	# install.sh (local/ symlinks into dotfiles); links.sh directly when dotfiles' own
+	# install.sh is what's running instead, since dotfiles has no local/ pointing at itself.
 	local overlay="${DOTFILES_ROOT}/local/links.sh"
+	if [[ ! -f ${overlay} ]]; then
+		overlay="${DOTFILES_ROOT}/links.sh"
+	fi
 	if [[ -f ${overlay} ]]; then
 		# shellcheck source=/dev/null
 		source "${overlay}"

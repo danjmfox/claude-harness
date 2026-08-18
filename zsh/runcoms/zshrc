@@ -81,16 +81,11 @@ if (( ${+commands[fzf]} )); then
 fi
 
 # --- Aliases ---
-alias ls='eza'
-alias ll='eza -lh'
-alias la='eza -lha'
-alias lt='eza --tree'
-
-
-# Telemetry wrapper, employer tier. Phase 2 moves this to the overlay's zshrc.local
-# and this block goes with it.
-if [[ -f "${DOTFILES}/work/otel-wrapper.zsh" ]]; then
-  source "${DOTFILES}/work/otel-wrapper.zsh"
+if (( ${+commands[eza]} )); then
+  alias ls='eza'
+  alias ll='eza -lh'
+  alias la='eza -lha'
+  alias lt='eza --tree'
 fi
 
 # bun completions (PNPM_HOME/BUN_INSTALL paths live in zprofile)
@@ -98,8 +93,15 @@ if [[ -s "$HOME/.bun/_bun" ]]; then
   source "$HOME/.bun/_bun"
 fi
 
-# Optional overlay seam — last, so it can override anything above. An `if` rather
-# than `cond && source`, which would return non-zero from zshrc when absent.
+# Optional overlay seam — last, so it can override anything above. Two paths, not
+# one: local/zshrc.local when this file is claude-harness's own copy (local/ is the
+# symlink into dotfiles); zshrc.local directly when dotfiles' own copy of this file
+# is what's active instead, since dotfiles has no local/ pointing at itself. Same
+# file, reached either way — whichever repo's install.sh currently owns $HOME.
+# An `if` rather than `cond && source`, which would return non-zero from zshrc
+# when absent.
 if [[ -f "${DOTFILES}/local/zshrc.local" ]]; then
   source "${DOTFILES}/local/zshrc.local"
+elif [[ -f "${DOTFILES}/zshrc.local" ]]; then
+  source "${DOTFILES}/zshrc.local"
 fi

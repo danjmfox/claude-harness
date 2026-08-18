@@ -19,7 +19,6 @@ path=(
   $HOME/{,s}bin(N)
   /opt/{homebrew,local}/{,s}bin(N)
   /usr/local/{,s}bin(N)
-  /Applications/Obsidian.app/Contents/MacOS
   # nWave DES shims — MUST precede .local/bin: nwave-ai's pipx entry points are
   # broken by a packaging bug (des module not shipped in the wheel) and
   # regenerate on every pipx install; the working shims live in .claude/bin
