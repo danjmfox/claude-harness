@@ -111,3 +111,22 @@ Use this rating for each dimension: **Strong** / **Adequate** / **Weak** / **Abs
 - If a dimension genuinely looks good, say so briefly and move on
 - Surface ADR candidates if you notice decisions that appear undocumented but significant
 - Keep the full report skimmable — detail in the table notes, not in prose walls
+
+## Candidate additions (backlog)
+
+Surfaced 2026-08-13 surveying one repo (a calendar/bookmarklet browser extension) — one data point, not yet generalized across projects. Curate before folding into the mandatory dimensions above.
+
+Generalize well — likely belong in Step 1 / Tools / Relevance / Consistency:
+- CI workflows: check `.github/workflows/*` path filters, release triggers, caching, required checks — and whether globs cover every source tree the repo actually has (a glob that only matches one of several parallel source dirs is a common miss)
+- Dependency health: run `pnpm audit`/`npm audit` and `depcheck` for unused or vulnerable deps; note pinned vs. caret ranges
+- Secrets/CI config: scan workflows and scripts for embedded credentials or ephemeral tokens
+- Docs vs. CI drift: confirm README setup steps (Node version, install/hook commands) actually match what CI requires
+- Contributor ergonomics: check `LICENSE`, `CONTRIBUTING`, `CODE_OF_CONDUCT` presence and currency
+- Decision-record staleness: verify ADRs marked Proposed/In-progress still map to current code and tests, not just that they exist
+
+Project-specific in the source survey, worth reconsidering per-project rather than as universal steps:
+- Executing the repo's actual test/build/gate commands to verify claimed gates pass locally (not just reading config) — tension with "Read only" constraint above; would need to be scoped as an explicit opt-in, not default
+- Release semantics: package version vs. tag vs. changelog consistency, build-artifact sentinel coverage
+- Locale/accessibility coverage specific to the domain (e.g. non-English locales, 24-hour clocks, ARIA on custom widgets)
+- Determinism/build-size budgets for compiled artifacts
+- Mutation testing / coverage-number reporting beyond what's already visible in CI config

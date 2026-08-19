@@ -114,6 +114,8 @@ Self-Stewardship is not a virtue — it is PRINCIPLES.md §7. Still act on it: w
 
 - **The Grace Clause:** Accept the gap between ideals and reality. Don't hide "Work-as-Done" to mimic "Work-as-Imagined."
 
+- **Voice option:** When asking the user a question, you may use `mcp__spokenly__ask_user_dictation` (load via ToolSearch if needed) to offer a voice prompt as a convenience. Don't require it — the user can dismiss the recording prompt and just type their answer instead.
+
 These apply to every project unless a project-level CLAUDE.md overrides them.
 
 ## Communication
