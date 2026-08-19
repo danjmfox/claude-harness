@@ -292,6 +292,50 @@ test_link_claude_skills_skips_existing_entry() {
 	return 0
 }
 
+test_link_claude_skills_also_links_dotfiles_skills() {
+	local tmp_home dotfiles_fixture
+	tmp_home="$(add_temp_dir)"
+	dotfiles_fixture="$(add_temp_dir)"
+	export HOME="${tmp_home}"
+
+	mkdir -p "${dotfiles_fixture}/claude/skills/fixture-skill"
+	printf 'sentinel\n' >"${dotfiles_fixture}/claude/skills/fixture-skill/SKILL.md"
+
+	local saved="${DOTFILES_SIBLING_ROOT-}"
+	DOTFILES_SIBLING_ROOT="${dotfiles_fixture}"
+	link_claude_skills >/dev/null 2>&1
+	DOTFILES_SIBLING_ROOT="${saved}"
+
+	local target="${HOME}/.claude/skills/fixture-skill"
+	if [[ ! -L ${target} ]]; then
+		return 1
+	fi
+	# shellcheck disable=SC2312
+	if [[ "$(readlink "${target}")" != "${dotfiles_fixture}/claude/skills/fixture-skill" ]]; then
+		return 1
+	fi
+
+	return 0
+}
+
+test_link_claude_skills_tolerates_missing_dotfiles_sibling() {
+	local tmp_home
+	tmp_home="$(add_temp_dir)"
+	export HOME="${tmp_home}"
+
+	local saved="${DOTFILES_SIBLING_ROOT-}"
+	DOTFILES_SIBLING_ROOT="${tmp_home}/no-such-dotfiles-checkout"
+
+	set +e
+	link_claude_skills >/dev/null 2>&1
+	local status=$?
+	set -e
+
+	DOTFILES_SIBLING_ROOT="${saved}"
+
+	[[ ${status} -eq 0 ]]
+}
+
 test_profile_scoped_links_are_included_for_that_profile() {
 	local saved
 	saved="$(declare -p SELECTED_PROFILES)"
@@ -510,6 +554,8 @@ run_test "doctor fails when required commands are missing" test_doctor_fails_for
 run_test "doctor handles plain mise current output" test_doctor_accepts_plain_mise_current_output
 run_test "link_claude_skills links each skill dir" test_link_claude_skills_links_each_skill
 run_test "link_claude_skills skips existing entries" test_link_claude_skills_skips_existing_entry
+run_test "link_claude_skills also links dotfiles skills" test_link_claude_skills_also_links_dotfiles_skills
+run_test "link_claude_skills tolerates a missing dotfiles sibling" test_link_claude_skills_tolerates_missing_dotfiles_sibling
 run_test "profile-scoped links are included for that profile" test_profile_scoped_links_are_included_for_that_profile
 run_test "other profiles exclude scoped links" test_other_profiles_exclude_scoped_links
 run_test "absent overlay leaves config links clean" test_absent_overlay_leaves_config_links_clean

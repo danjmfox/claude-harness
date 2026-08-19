@@ -225,26 +225,36 @@ link_config_files() {
 }
 
 link_claude_skills() {
-	local skills_src="${DOTFILES_ROOT}/claude/skills"
 	local skills_dest="${HOME}/.claude/skills"
 
-	if [[ ! -d ${skills_src} ]]; then
-		return
-	fi
+	# Two sources: this repo's own general-purpose skills, plus dotfiles' repo-specific
+	# ones (its skills are tied to dotfiles' own paths/tooling — e.g. brew-update-spec
+	# references dotfiles' scripts/ and brew/Brewfile.* — so they live there, not here).
+	# Skip a missing source rather than failing: dotfiles isn't guaranteed checked out
+	# on every machine this installer runs on.
+	local dotfiles_root="${DOTFILES_SIBLING_ROOT:-${HOME}/projects/dotfiles}"
+	local -a skills_src_dirs=(
+		"${DOTFILES_ROOT}/claude/skills"
+		"${dotfiles_root}/claude/skills"
+	)
 
-	mkdir -p "${skills_dest}"
+	local skills_src
+	for skills_src in "${skills_src_dirs[@]}"; do
+		[[ -d ${skills_src} ]] || continue
+		mkdir -p "${skills_dest}"
 
-	for skill_path in "${skills_src}"/*/; do
-		[[ -d ${skill_path} ]] || continue
-		local name target
-		name="$(basename "${skill_path}")"
-		target="${skills_dest}/${name}"
+		for skill_path in "${skills_src}"/*/; do
+			[[ -d ${skill_path} ]] || continue
+			local name target
+			name="$(basename "${skill_path}")"
+			target="${skills_dest}/${name}"
 
-		if [[ -e ${target} || -L ${target} ]]; then
-			continue
-		fi
+			if [[ -e ${target} || -L ${target} ]]; then
+				continue
+			fi
 
-		ln -s "${skill_path%/}" "${target}"
+			ln -s "${skill_path%/}" "${target}"
+		done
 	done
 }
 
