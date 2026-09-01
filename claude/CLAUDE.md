@@ -23,6 +23,11 @@ NOTE:
 - All nwave skills, agents, hooks should be installed: warn if this is not the case.
 - DES markers: prose in agent prompts referencing step IDs (e.g. "step 03-03") triggers `DES_MARKERS_MISSING`. Add `<!-- DES-ENFORCEMENT : exempt -->` at the top of orchestration-level agent prompts that are not themselves executing a step.
 - DES `SKIPPED` log entries require a valid prefix: `NOT_APPLICABLE:`, `APPROVED_SKIP:`, `BLOCKED_BY_DEPENDENCY:`, `CHECKPOINT_PENDING:`, or `DEFERRED:`.
+- **nWave v3.22.0 breaking CLI change**: `des commit` now requires `--task-id` alongside `--step-id`, composing both into one trailer block via `git interpret-trailers`. Any pinned script/hook calling it with the old signature breaks on upgrade.
+- **nWave v3.22.0 fixed DISTILL hand-off blocking** under squash/rebase/fast-forward-only merges with a pre-commit test gate (issue #56): Mandate 7 ("RED, not BROKEN") is an error-*classification* rule, not a directive to commit failing tests — hand-off is green-by-construction. A pre-3.22 project still hitting this is the known bug, not expected behavior.
+- **nWave v3.22.0** made `ask-intelligent` the default density-prompt mode under `standard` rigor (was `ask`) — wave-end menus now show only a wave's own declared expansion triggers. Narrower wave-end prompts after upgrading is this, not a regression.
+- `Task-Id`/`Step-Id` git trailers aren't reliably parsed back everywhere yet (issue #78, open as of v3.22.0) — don't build automation that depends on reading them from commit metadata.
+- Before adopting an nWave point release, verify against the actual diff, not the README's "What's New": the public repo is a generated projection of a private dev repo, so its file set can shift silently between tags (e.g. `tests/` — 1,049 files — vanished from the public tree between v3.21.0 and v3.22.0, unmentioned in release notes). `git diff --stat <old>..<new> -- ':!docs' ':!README.md'` plus `git ls-tree -r <ref> --name-only | wc -l` catches this; a third-party AI summary can sound coherent while missing it entirely.
 
 The human is architect and reviewer; the agent executes within constraints.
 
