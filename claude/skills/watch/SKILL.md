@@ -310,6 +310,27 @@ be quietly dropped when it fires.
   list to see *what the agent thinks* it has done, and a probe to see *what actually changed*; when
   they disagree, that disagreement is the finding.
 
+## Reporting events
+
+Six things happen during a watch, and each has earned message, one line, no restatement of the
+reasoning above — the reader has already seen why a terminal-condition hit differs from full
+completion; repeating that paragraph on every occurrence is the wordiness this section exists to cut.
+
+- **Monitor's terminal condition fires:** "Probe condition met — agent's own completion still
+  pending."
+- **Harness reports the background task/agent done:** let the notification card speak; add nothing
+  unless the result needs a qualifier ("— but see the RED spike below").
+- **No movement past the stall window:** "No movement for Ns — stalled, blocked on a prompt, or
+  dead."
+- **Monitor times out without the terminal condition:** "Watch expired, inconclusive."
+- **No safe terminal condition existed, arming declined:** "No viable probe — watching for
+  completion only, no progress signal."
+- **`SendMessage` confirms the agent is gone:** "Agent confirmed dead, won't resume."
+
+Expand past one line only when asked, or when the message itself is the finding — a spike, a
+disagreement between the task list and the probe. Ties back to **Three verdicts, not two** above:
+the terseness is in the wording, not in collapsing inconclusive into done.
+
 ## Losing the agent
 
 The hard limit on the pattern: **a cancelled agent is invisible to every probe.** A probe measures the
