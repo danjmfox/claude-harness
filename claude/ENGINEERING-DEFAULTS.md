@@ -46,7 +46,12 @@ manufacturing evidence.
 
 ## Git Discipline
 
-- **Never commit to `main`.** Branch first, always from a pulled main.
+- **Never commit to `main`. Branch first, always from a pulled main — including a dispatched
+  subagent's first commit.** A subagent (crafter, orchestrator, anything reached via Task/Agent)
+  acts on what its dispatch prompt says, not on independently re-deriving a standing order it
+  was never pointed at for that specific action. When delegating work whose first act might be
+  a commit, state the branch requirement inline in the prompt itself — "fetch on event" alone
+  is not reliable once delegation crosses a Task-tool boundary.
 - **Never `git add -A` or `git add .`.** Stage named paths only, so unrelated files (`.trunk/`, lint config, `.idea/`, generated output) are never swept in.
 - **Verify the push landed before deleting a branch** — `git log origin/<branch> -1`.
 - **Never rewrite or reset `main`'s ref.** If history surgery looks necessary, stop and ask.
