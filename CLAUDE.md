@@ -72,6 +72,12 @@ probe it rather than looking it up. Machine-specific findings belong in your ove
   `~/.cache/trunk/tools/prettier/<version>-*/node_modules/.bin/prettier -w <file>`, and likewise for
   `shellcheck`. `shfmt` has version directories but no binary inside them, so shell *formatting* is
   verifiable only where trunk itself runs
+- **Never run concurrent Claude Code sessions directly on `main` without worktrees.** Two or more
+  sessions committing to the same checkout race on the working tree, and recovering afterward hits
+  the sandbox's `unable to unlink old '<path>'` constraint on every file symlinked into
+  `~/.claude/` (see Environment Constraints in `~/.claude/CLAUDE.md`) — `git checkout`/`git merge`
+  half-fail from inside the sandbox and need a real terminal to finish. Give each concurrent
+  session its own `git worktree add`
 - **Never amend a commit whose hash you have already reported.** Whenever merges happen out of sight
   the commit may already be on `main`, and amending produces a conflicting sibling rather than an
   update: same base, same lines, two independent edits. Add a follow-up commit instead
