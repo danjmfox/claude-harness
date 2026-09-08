@@ -61,6 +61,13 @@ for what *actually changed*. Disagreement between the last two is the finding.
    changes.
 4. **Shape the terminal condition so it cannot be satisfied without the work happening.** This is
    the whole trick.
+5. **When the harness's own completion notification for the watched agent arrives, check whether the
+   Monitor is now redundant and `TaskStop` it if so.** The self-terminating recipes below cover the
+   case where the probe's own terminal condition fires first; they do nothing for the reverse — the
+   agent finishing before the probe next samples, a plan change that means the literal `STEPS` is
+   never reached, or any other race. A non-persistent Monitor still dies at its `timeout_ms`, but a
+   `persistent: true` one runs until `TaskStop` or the session ends — so for that case, this step is
+   not a courtesy, it is the only thing that ends it.
 
 ## The terminal condition is the hard part
 
@@ -309,6 +316,27 @@ be quietly dropped when it fires.
   work rather than described by it, which is what makes them worth sampling. Use the structured task
   list to see *what the agent thinks* it has done, and a probe to see *what actually changed*; when
   they disagree, that disagreement is the finding.
+
+## Reporting events
+
+Six things happen during a watch, and each has earned message, one line, no restatement of the
+reasoning above — the reader has already seen why a terminal-condition hit differs from full
+completion; repeating that paragraph on every occurrence is the wordiness this section exists to cut.
+
+- **Monitor's terminal condition fires:** "Probe condition met — agent's own completion still
+  pending."
+- **Harness reports the background task/agent done:** let the notification card speak; add nothing
+  unless the result needs a qualifier ("— but see the RED spike below").
+- **No movement past the stall window:** "No movement for Ns — stalled, blocked on a prompt, or
+  dead."
+- **Monitor times out without the terminal condition:** "Watch expired, inconclusive."
+- **No safe terminal condition existed, arming declined:** "No viable probe — watching for
+  completion only, no progress signal."
+- **`SendMessage` confirms the agent is gone:** "Agent confirmed dead, won't resume."
+
+Expand past one line only when asked, or when the message itself is the finding — a spike, a
+disagreement between the task list and the probe. Ties back to **Three verdicts, not two** above:
+the terseness is in the wording, not in collapsing inconclusive into done.
 
 ## Losing the agent
 

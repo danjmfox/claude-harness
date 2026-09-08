@@ -167,10 +167,12 @@ Fetch on the event, not the mode — a trigger only fires if it names a moment. 
 - `~/.claude/stack.md` — when choosing libraries, tools, or runtime versions
 - `~/.claude/projects.md` — when the user references a project by name without full context
 - `~/.claude/harness-constraints.md` — **if present**, when a command fails in a way that looks like a permission denial. Absent on most machines: it is an overlay file recording one endpoint's sandbox, not a fact about the harness. Probe first regardless; the file is a shortcut, not an authority
+- `~/.claude/token-budget.md` — **if present**, before dispatching a background wave (`nw-fast-forward`, DISTILL into DELIVER) or when configuring nWave rigor. Absent on most machines: it is an overlay file recording one account's cost shape, not a fact about the harness. Where absent, the personal/Pro-tier default in `ENGINEERING-DEFAULTS.md` stands unmodified
 
 Skill triggers:
 
 - **graphify** (`~/.claude/skills/graphify/SKILL.md`) — any input to knowledge graph. When the user types `/graphify`, invoke the Skill tool with `skill: "graphify"` before doing anything else.
+- **buildy** (`~/.claude/skills/buildy/SKILL.md`) — any request shaped like starting, resuming, or picking the next piece of dev work, however vague ("let's build the next feature", "what should I work on next", a bug report, a new capability ask). Invoke the Skill tool with `skill: "buildy"` before doing anything else — including before compiling your own candidate list or asking which feature to pursue. `buildy`'s own `NO_FEATURE`/`FEATURE_IN_FLIGHT` states already do that discovery; improvising it inline is the failure this line exists to prevent.
 - **General rule**: "Use /skill-name to X" in any user message is a literal invocation instruction — invoke the Skill tool for that skill *before* doing X, even when the task description is complete enough to proceed directly.
 - **No substitutions**: when the user names a skill or methodology, use exactly that one. Never reach for a similar-sounding alternative. If the named skill does not exist, say so and stop — do not fall back silently.
 

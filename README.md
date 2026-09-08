@@ -15,7 +15,7 @@ the standing orders in particular explain why each rule exists.
 | `claude/PRINCIPLES.md`           | Five engineering virtues, each framed as a transition away from something                    |
 | `claude/ENGINEERING-DEFAULTS.md` | Git discipline, verification, quality gates — indexed by _event_, not by topic               |
 | `claude/hooks/`                  | Four `PreToolUse` guards: git discipline, test integrity, agent dispatch, monitoring         |
-| `claude/skills/`                 | Seventeen skills — `/red`, `/green`, `/refactor`, `/review`, `/ship`, `/survey`, `/watch`, … |
+| `claude/skills/`                 | Eighteen skills — `/red`, `/green`, `/refactor`, `/review`, `/ship`, `/survey`, `/watch`, `/buildy`, … |
 | `zsh/runcoms/`                   | zsh startup files symlinked into `$HOME`, plus the plugin submodules they load               |
 | `install.sh`                     | Symlinks all of the above into `~/.claude/` and `$HOME`                                      |
 | `tests/`                         | Eight bash suites covering the installer, the hooks, the skills, and zshrc                   |
@@ -38,6 +38,21 @@ Verify a machine against the target-state manifest at any time:
 ```bash
 ./scripts/doctor.sh
 ```
+
+## Orchestration skills: the declarative state-table pattern
+
+Most skills here are procedural — a fixed sequence of steps (`/red` → `/green` → `/refactor`).
+`claude/skills/buildy/SKILL.md` is the one exception, and the shape is deliberate: instead of
+scripting a sequence, it declares a table of states — `State | Trigger | Action | Owner | Next
+state` — that names every state the work can be in and what moves it to the next one. It doesn't
+reimplement `nw-new`, the wave agents, `watch`, or `ship`/`gh-stack`; it only decides, from project
+state that can change out from under it (nWave installed or not, mid-feature or starting fresh,
+triaged as bug/refactor/feature), which existing skill or agent to hand off to next.
+
+Reach for this shape when a skill's job is to *route* between other skills based on state, not to
+*execute* a pipeline — a fixed procedure doesn't need a state table, and forcing one on it adds
+indirection with no payoff. `buildy` is the current example; its `SKILL.md` is the reference to
+read, not this summary.
 
 ## Taking the parts you want
 

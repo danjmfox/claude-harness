@@ -39,3 +39,15 @@ What's the cost of doing this late vs. early?
 
 Small / Medium / Large — based on unknowns and complexity, not just line count.
 Flag if this should be split before starting.
+
+## Phase 2 — Save the story
+
+Save the drafted story as markdown, the same way `/adr` saves a decision record — otherwise this
+scoping work exists only in chat and is gone once the conversation ends.
+
+1. **Find the stories directory.** Look for an existing one — commonly `docs/stories/` or
+   `docs/backlog/`. If none exists, create `docs/stories/`, or ask where the user keeps them.
+2. **Derive a slug** from the story's **I want** clause (kebab-case, no dates — stories aren't
+   versioned records) and write the file as `<slug>.md`.
+3. **Confirm**: "Story `<slug>` saved to `<path>`. Update it in place as scope changes; there's no
+   separate status field to advance."
