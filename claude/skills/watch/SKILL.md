@@ -61,6 +61,13 @@ for what *actually changed*. Disagreement between the last two is the finding.
    changes.
 4. **Shape the terminal condition so it cannot be satisfied without the work happening.** This is
    the whole trick.
+5. **When the harness's own completion notification for the watched agent arrives, check whether the
+   Monitor is now redundant and `TaskStop` it if so.** The self-terminating recipes below cover the
+   case where the probe's own terminal condition fires first; they do nothing for the reverse — the
+   agent finishing before the probe next samples, a plan change that means the literal `STEPS` is
+   never reached, or any other race. A non-persistent Monitor still dies at its `timeout_ms`, but a
+   `persistent: true` one runs until `TaskStop` or the session ends — so for that case, this step is
+   not a courtesy, it is the only thing that ends it.
 
 ## The terminal condition is the hard part
 
