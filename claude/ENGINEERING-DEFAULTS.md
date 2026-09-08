@@ -16,7 +16,7 @@ Read the section whose event has fired, not the whole file. "Working on an engin
 
 ## Feature Boundaries
 
-`/nw-new` for anything that will generate its own requirements or decisions. Extend an existing
+`buildy` for anything that will generate its own requirements or decisions. Extend an existing
 `feature-delta.md` only to refine requirements already in it.
 
 You have outgrown a boundary when the delta passes ~300 lines, requirement IDs run past ~E12, or you
@@ -36,7 +36,7 @@ manufacturing evidence.
 ## Engineering Defaults
 
 - Conventional commits; trunk-based development
-- Branch lifecycle: feature branch → `/check` → push → MR → merge → `git checkout main && git pull` → `git branch -d <branch>`. Always branch from a pulled main. Never carry uncommitted work across stories.
+- Branch lifecycle: feature branch → draft PR opened immediately (`ship` step 2) → `/check` → push → mark PR ready (`ship` step 10) → merge → `git checkout main && git pull` → `git branch -d <branch>`. Always branch from a pulled main. Never carry uncommitted work across stories.
 - Pre-commit: where lefthook is configured, it runs `pnpm test --run` and blocks commits with failing tests. Not universal — check for a lefthook config before assuming a repo has any pre-commit gate at all
 - Pre-push: where trunk is configured, enable its `trunk-check-pre-push` action so formatting and lint drift cannot reach the remote. Prefer this over `trunk-fmt-pre-commit` on any machine where a sandboxed session commits: trunk cannot run under the Claude sandbox, so a pre-commit hook invoking it aborts every such commit
 - CI gates: dep-cruiser dependency enforcement (failing build); SAST, SBOM when applicable
@@ -78,10 +78,11 @@ manufacturing evidence.
   instead of the trunk, which looks like success and lands nothing.
 
 **Stacked PRs** are the PR-level form of the feature-boundary rule above: prefer several small
-reviewable layers over one large diff. `gh stack` (GitHub's own CLI extension) manages the chain.
-Merge bottom-up, never squash, and `gh stack sync` after any mid-stack change. The tooling does not
-create the decomposition — name the layers before writing, and if they cannot be named, the work is
-not decomposed yet.
+reviewable layers over one large diff. `gh stack` (GitHub's own CLI extension) manages the chain;
+each layer's draft PR already exists from `ship` step 2, so stacking needs nothing extra at
+creation time. Merge bottom-up, never squash, and `gh stack sync` after any mid-stack change. The
+tooling does not create the decomposition — name the layers before writing, and if they cannot be
+named, the work is not decomposed yet.
 
 ## Verification Before Claiming Success
 
@@ -167,7 +168,7 @@ Layered quality practices — each catches what the layer below misses. Apply bo
 
 - **dependency-cruiser** — enforces Pure Core / Shell boundary mechanically in CI; makes architecture load-bearing
 - **Pure Core / Shell** — purity means no hidden state, no mocking needed, nowhere for bugs to hide
-- **Mutation testing** — verifies tests catch real bugs, not just execute lines; target 80-85% kill rate on core modules
+- **Mutation testing** — verifies tests catch real bugs, not just execute lines; target 85% kill rate on core modules
 - **Property-based testing** (fast-check) — verifies tests cover the right input space; reach for it on: serialisation/roundtrips, state machine transitions, algorithms, any domain with algebraic rules (associativity, idempotency, commutativity)
 - **Outside-In TDD** — double loop: BDD acceptance test (outer) drives inward to unit tests (inner); acceptance test prevents TBU (Tested But Unwired)
 - **Walking Skeleton** — entry point for any new feature; proves all architectural layers connect before building out. A skeleton proves _architecture risk_ is resolved; an MVP proves _value risk_. Don't conflate — skeleton should be obviously incomplete
