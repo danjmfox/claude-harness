@@ -26,7 +26,7 @@ calibration, and exit.
 | `IN_WAVE`           | Inside DISCOVER…DISTILL                              | Nothing new here — root `CLAUDE.md`'s "nWave agents are mandatory" rule already forces the wave's own agent(s) and `*-reviewer` gate. Do not re-model this step | wave's own `nw-*` agent + reviewer | `DELIVER_PENDING` once DISTILL's artifacts exist     |
 | `DELIVER_PENDING`   | Roadmap ready, about to dispatch DELIVER             | **Cost-check gate:** if `~/.claude/token-budget.md` exists, follow it — calibrate `nw-rigor`, say the wave/agent count out loud before dispatch                 | this skill                         | `DELIVER_RUNNING`                                    |
 | `DELIVER_RUNNING`   | DELIVER dispatched                                   | `run_in_background: true`, then arm a `Monitor` per `watch`'s own "nWave / DES specifics" recipe — `STEPS` from `roadmap.json`, commit count as the terminal, never Bash-probe `execution-log.json` (`watch/SKILL.md:375-383`) | `nw-deliver`/`nw-execute` + `watch` | `SHIP_READY` (commit count == `STEPS`) or a check-in per `watch`'s stall criteria |
-| `SHIP_READY`        | nWave path: all steps COMMIT/PASS, Phase 7 already pushed one branch (`nw-deliver/SKILL.md:228-230`). Light path: `LIGHT_REVIEW` passed | Decide stacking — see below. On the light path this is just `ship`'s own step 2 draft PR (opened at branch creation) reaching step 10, ready-for-review          | `ship` / `gh-stack`                | `SHIPPED`                                            |
+| `SHIP_READY`        | nWave path: all steps COMMIT/PASS, Phase 7 already pushed one branch (`nw-deliver/SKILL.md:228-230`). Light path: `LIGHT_REVIEW` passed | **Docs check first**: invoke `docs-review` before anything else, unless this run was triaged as `REFACTOR` (no intended behaviour change — nothing for docs to have drifted against). Covers `NO_FEATURE`/`FEATURE_IN_FLIGHT`, `BUG_FIX`, and the light path's `LIGHT_CYCLE` alike, since only `REFACTOR` is excluded. Then decide stacking — see below. On the light path this is just `ship`'s own step 2 draft PR (opened at branch creation) reaching step 10, ready-for-review | `docs-review` (unless `REFACTOR`) then `ship` / `gh-stack` | `SHIPPED`                                            |
 | `SHIPPED`           | PR open                                              | `/done` if the session is closing; otherwise loop to `ECOSYSTEM_CHECK` for the next piece of work                                                                | `done`                              | `ECOSYSTEM_CHECK`                                    |
 
 **Stacking, decided 2026-09-07: scope layers in DISTILL, not inside `nw-deliver`.**
@@ -74,3 +74,10 @@ captured separately in `docs/decisions/DR--20260907--process--nwave-rigor-profil
   machinery underneath it to calibrate. If `LIGHT_CYCLE` work is itself delegated to a background
   agent, the Delegation Budget and `watch` still apply on their own terms; this skill does not
   invent a light-path equivalent of `DELIVER_PENDING`.
+- **`SHIP_READY`'s docs-review gate excludes only `REFACTOR`.** A refactor has no intended
+  behaviour change by definition, so there's nothing for docs to have drifted against. A bug fix
+  is included on purpose — fixing behaviour is exactly the kind of change that leaves docs
+  describing the old, wrong behaviour, and `docs-review`'s own trigger ("user-facing behaviour,
+  wording, or a tracked decision") applies to it as much as to a new feature. The light path is
+  included too, for the same reason: it has no `REFACTOR` classification to exempt it, and a
+  well-understood small change can still be user-facing.
