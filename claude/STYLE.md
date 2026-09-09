@@ -98,6 +98,33 @@ The slot for "found y trying x" — a discovery that wasn't the goal but is wort
 - **Graduates out.** If it needs action it moves to `## Findings` or becomes a spawned task.
   This slot is for things that need _knowing_, not doing.
 
+### Presenting choices
+
+Options cost per item held in the reader's head at once, not per word — that is where
+decision paralysis actually lives.
+
+- **Cap at 2–3 live options.** A fourth is rarely a distinct choice; it is usually two
+  merged into one bullet, or a variant of an option already listed.
+- **One clause of rationale per option, not a paragraph.** The full trade-off argument
+  belongs in `## Why`, if it needs one at all — the option list is for choosing, not for
+  being persuaded.
+- **Two or more comparable dimensions → a table, not prose-per-option.** Same rule as
+  the tables heuristic below, applied specifically to choices: a table forces every
+  option onto the same axes, which is what stops one option getting three sentences and
+  another getting one.
+
+```text
+| Option                         | Cost                   | Reversibility                   | Recommended |
+| -------------------------------- | ------------------------ | ---------------------------------- | ----------- |
+| Cancel + re-arm on click         | +1 retained `CancelFn`  | Easy — isolated to one function   | ✅          |
+| Fire-and-forget (seed pattern)   | None                     | Trivial                            |             |
+```
+
+Observed 2026-09-09: a 3-option choice presented as three full paragraphs, each carrying
+its own trade-off essay, cost the reader the ability to hold all three at once — by the
+third option the first was already out of working memory. The table above is the same
+choice, same options, re-shaped.
+
 ## Visual channels
 
 In a monospace terminal, colour and shape are pre-attentive — they are seen before they are
@@ -199,6 +226,13 @@ by changing.
 is still the answer to "what now", and dropping it loses the ask. Recurrence is not a growing
 ledger: state it in full once, then compress to one line for as long as it holds, and never
 carry an item that is no longer the next thing.
+
+The same discipline applies to a spec that accretes across several turns — a design, a plan,
+a growing set of confirmed decisions. State it in full once; after that, state only what
+changed, with a pointer back rather than a retyped whole. Observed 2026-09-09: a five-item UX
+spec, built up confirmation by confirmation across six turns, was retyped in full again on
+turn four and turn six — the reader had already confirmed items 1–3 and only needed to see
+4–5, but got the whole thing twice more regardless.
 
 ## Anti-patterns
 
