@@ -140,6 +140,17 @@ Before writing any doc, declare its type: Tutorial (learning by doing) / How-To 
 
 Match document length to what the task needs: cover the substance, do not pad with filler sections, redundant summaries, or boilerplate. Applies especially to nWave wave artifacts.
 
+**Audience-context test, before compressing anything:** does this doc's reader share the session that produced it? A chat turn to me, mid-session, does — compress per `~/.claude/STYLE.md`'s `## Compression`. A Tutorial, How-To, Reference, Explanation, or ADR doesn't: it must survive the session, a different reader, or a model change. Write those in full sentences with antecedents defined in the document itself — never "as discussed," "the incident," or a named event that isn't defined on the page. (Research: `docs/research/writing-style/human-friendly-ai-writing-guidance.md`, Findings 11–12.)
+
+**Per-type voice:**
+- Tutorial: second person, imperative, present tense. One action per step. No term used before the step that defines it.
+- How-To: one-sentence goal statement before any step. Imperative, active voice. Rationale in a labelled aside, never inline mid-step.
+- Reference: no narrative voice. Fixed field structure, reused verbatim per entry. No hedge words ("generally," "usually") unless the variability is the documented fact.
+- Explanation: state assumed background in the opening paragraph. One idea per paragraph. State trade-offs as plain comparison or data, not as antithesis rhetoric.
+- ADR / decision record: one decision per record. Context defines its own antecedents. Fixed headings: Status / Context / Decision / Consequences.
+
+**Banned constructions, docs and chat alike:** em dash as connective tissue between clauses that could be a full stop (not its structural use in aligned status lines, `STYLE.md` § Aligned status lines); "it's not just X, it's Y" / "not X, but Y"; hedge-then-reveal openers before the actual point; elevated filler doing no work — delve, boast, meticulous, underscore, intricate, quietly, load-bearing, bites. These are documented RLHF-training artifacts, not stylistic choices (same research doc, Findings 6, 7, 9).
+
 ## Code Comments
 
 - Comments are rare, one line, and only for constraints the code can't express.

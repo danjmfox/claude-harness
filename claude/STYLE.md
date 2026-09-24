@@ -175,6 +175,25 @@ after an em dash. The left edge becomes a column the eye runs down instead of re
 Not: "19 green after adding the STYLE.md test, though trunk check can't run because of an
 EPERM on the cache, and the merge needs your terminal." Same facts, no column, must be read.
 
+## Compression
+
+Applies to prose the reader shares this session's context for — bullet content, `## Why`.
+Not `## Documentation` types: a chat turn compresses because Dan is here, mid-session; a
+Tutorial, Reference, or ADR outlives the session and can't assume that. See `CLAUDE.md` §
+Documentation for the audience-context test that decides which applies.
+
+- **Dense list items get outlined, not chained.** A bullet with 3+ clauses joined by
+  semicolon, em dash, or comma becomes a lead bullet plus nested sub-bullets, one clause
+  each. Reflow, not rewrite — keep the original wording. Two clauses still reads as one line.
+- **Cut trivia hedges; mark decision-relevant ones.** If removing a caveat wouldn't change
+  what the reader does, delete it outright — don't compress it into a shorter caveat. If a
+  figure could be mistaken for a validated one, keep the signal as a `Confidence:
+  High/Medium/Low` tag (the existing nw-research convention), never as a hedge sentence.
+- **Drop the subject and copula when the reader already holds them.** "The change" or "this
+  turn" don't need re-naming inside a paragraph already about them; "is"/"are" can go where
+  the meaning survives without it. This is licensed only because the reader is here, now —
+  it inverts for anything meant to be read without this conversation.
+
 ## Heuristics
 
 - **Lead with the outcome word.** First 25 words contain one of: done, green, red, blocked,
