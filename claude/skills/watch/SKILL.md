@@ -135,9 +135,10 @@ least know you have coupled the observer to the observed. Observed once, n=1, on
 
 ## Recipes
 
-All three emit on change only and have a "will not run" branch. **All three also run `pnpm test` as
-the probe** — read the write-side-effect caution above before copying one onto a repo whose suite
-touches shared scratch space.
+All emit on change only and have a "will not run" branch. The first two run `pnpm test` as the probe
+— read the write-side-effect caution above before copying either onto a repo whose suite touches
+shared scratch space. The rest read `git`, the filesystem, or a remote API instead, and don't carry
+that risk.
 
 **Test count climbing** — terminal: green, *and* RED was observed first. The `sawred` flag is what
 makes this non-vacuous; without it the watch cannot distinguish work that succeeded from a suite
@@ -172,6 +173,13 @@ instead: it is monotonic and increments once per completed unit, so it cannot re
 Before arming, get the planned unit count from wherever the work is enumerated — a roadmap file, a
 task list, a migration manifest — and set `STEPS` as a literal. Reading it once up front beats
 probing it, because a probe on the same file the agent is writing is subject to read skew.
+
+One session skipped this and derived the count dynamically instead — `jq 'select(has("step_id"))'`
+against the live roadmap file on every sample. The schema actually used `id`, not `step_id`, so the
+probe silently matched nothing and reported "roadmap.json not yet written" through two real commits,
+caught only because the ordering looked wrong on inspection, not because the probe complained. A
+field-name mismatch against a live schema is invisible in exactly the way a missing file is —
+another reason to read `STEPS` once as a literal rather than re-deriving it every tick.
 
 ```bash
 prev=""; stable=0; BASE=$(git rev-list --count HEAD); STEPS=12
@@ -257,6 +265,64 @@ report the delta and do not treat a decrease as an anomaly once `HEAD` has ruled
 artefact above; a genuine shrink is ordinary work. Counting is `awk` rather than `grep -c`
 because `grep -c` prints `0` *and* exits 1, so the reflexive `|| echo 0` emits two zeroes and splits
 the status line in half.
+
+**A single known artifact, no git or test signal** — for a docs-only wave with exactly one output
+file (a feature-delta, an ADR, a roadmap draft), skip git and test entirely: poll the file's own
+size. Simpler than numstat when there is only one target, and the shape that converged independently
+across three unrelated projects, which is the actual evidence it earns a place here rather than a
+guess at what might be useful.
+
+```bash
+FILE=/absolute/path/to/output.md
+prev=""; still=0
+while true; do
+  if [ ! -f "$FILE" ]; then cur="FILE NOT YET WRITTEN"
+  else
+    lines=$(wc -l < "$FILE" | tr -d ' '); bytes=$(wc -c < "$FILE" | tr -d ' ')
+    cur="$lines lines, $bytes bytes"
+  fi
+  [ "$cur" != "$prev" ] && { echo "$cur"; prev="$cur"; still=0; } || still=$((still+1))
+  [ "$still" -eq 10 ] && echo "no growth in ~7.5min — reading/researching, blocked on a prompt, or stalled"
+  sleep 45
+done
+```
+
+This is liveness only — size growing says nothing about correctness, and structural presence says
+even less: the scaffold bug that motivated question 4 above was exactly this shape, an empty
+`## Sources` heading with zero URLs satisfying a presence check. If the file is machine-parsed rather
+than prose — `roadmap.json`, a manifest — pair the size check with a validity check, because a
+growing byte count mid-write can be a truncated, unparseable document rather than progress:
+
+```bash
+python3 -c "import json; json.load(open('$FILE'))" 2>/dev/null && valid=1 || valid=0
+```
+
+`valid=0` while size is still climbing is normal — the file is mid-write. `valid=0` once size has
+stopped changing for several samples is the failure worth surfacing.
+
+**External CI/PR checks settling** — not a local file or git state at all: watch a pull request's
+checks resolve. The terminal is the absence of any pending state, not a specific pass/fail — report
+the actual result once terminal rather than folding it into the loop's own condition.
+
+```bash
+PR=123
+while true; do
+  out=$(gh pr checks "$PR" 2>&1)
+  if echo "$out" | grep -qiE 'pending|queued|in_progress|expected'; then
+    cur="CHECKS PENDING"
+  else
+    cur="CHECKS SETTLED — see gh pr checks $PR for pass/fail detail"
+    echo "$cur"; break
+  fi
+  [ "$cur" != "${prev:-}" ] && echo "$cur"; prev="$cur"
+  sleep 25
+done
+```
+
+Poll no faster than every 20–30s — this is a remote API, not a local file. Prefer this hand-rolled
+loop over reaching for a packaged CI-monitoring tool first: one org's own CI-monitor plugin failed
+outright in a sandboxed session because it could not write its PID file there, and the loop above is
+what actually ran to completion when the packaged tool could not.
 
 ### What a curve showed once
 
@@ -359,6 +425,11 @@ author, 2026-08-06.
   its output. It returns `was stopped and won't be resumed` for a dead one, the fact no probe can
   supply. Instruct it to *report only and not write*, or a resumed agent and an orchestrator taking
   over collide on the same files.
+- **That same instruction is a trap when sent mid-work rather than on resume.** Telling a
+  still-running agent to "report only, don't write" can freeze it exactly as if it had stalled — the
+  liveness check causes the very condition it was checking for. The stall notice that follows is
+  self-inflicted, not evidence of a hang; if a probe goes flat right after a check-in message, suspect
+  the message's own wording before suspecting the agent. Observed once, n=1, one author, 2026-09-17.
 - **After any interrupt or restart, re-check every agent dispatched before it.**
 - **Work written incrementally to disk survives; a report does not.** A test-authoring agent lost this
   way left most of its output usable, where a reviewer lost the same way left nothing, its entire
