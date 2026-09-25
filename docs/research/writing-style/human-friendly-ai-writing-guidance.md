@@ -238,3 +238,5 @@ Note: NN/G, gov.uk content-design pages, Wikipedia, and several practitioner/med
 
 ## Research Metadata
 Duration: ~40 turns | Sources examined: 29 | Sources cited: 24 (Full Citations) + additional corroborating sources in Findings/Source Analysis | Cross-refs: 11 of 12 findings have 2+ independent sources (Finding 8 taxonomy relies on 3 medium-trust sources per medium-trust cross-reference rule) | Confidence distribution: High 7 findings, Medium-High 2 findings, Medium 3 findings | Tool failures: none | Output: docs/research/writing-style/human-friendly-ai-writing-guidance.md
+
+See also: `docs/reference/ai-writing-tics-catalogue.md` — a fixed-field reference catalogue of 21 further documented AI-writing tics (stock transitions, formulaic openers, corporate/elevated-verb overuse, list-itis, sycophantic openers/closers, hedge stacking, boilerplate disclaimers, and more) not covered by Findings 6-9 above.
