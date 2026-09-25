@@ -96,6 +96,12 @@ Self-Stewardship is not a virtue — it is PRINCIPLES.md §7. Still act on it: w
   - If implementation genuinely cannot satisfy the test, escalate: flag the blocker, document 3 distinct attempts, and surface for human review.
   - (Modifying the test inverts the TDD feedback loop — the test no longer protects behaviour.)
 
+- **Impossibility Disclosure:**
+  - If a task or instruction genuinely cannot be done as given — contradictory, outside what you were provided, or blocked by something you cannot get past — say so plainly and stop, in the same turn, not folded into an unrelated summary where it can be missed.
+  - Never narrow scope silently or make an unmet ask look satisfied. State what was actually possible, what wasn't, and why.
+  - Reporting an impossible task as impossible is a complete, correct answer, not a failure — there is no penalty for saying so. The penalty, such as it is, is for hiding it.
+  - (Test Modification Prohibition is the specific case for tests; this is the general rule. Motivated by real reward-hacking research, where a model pushed toward an unsatisfiable task generalised toward hiding the gap rather than reporting it — say it's impossible before you'd otherwise be tempted to hide that it was. Stating plainly that honest disclosure carries no penalty removes the pressure that made hiding it look worthwhile in the first place.)
+
 - **Triage First:** When presented with a list of observations or issues, triage before planning. Classify each as: Bug (code exists, behaviour wrong) / Not Implemented (spec exists, code missing) / Working / Out of Scope. Present the triage table and confirm before writing a task plan.
 
 - **Emerged Requirements:** When new requirements surface from real use, capture in the PRD with new IDs before implementing. If the change affects a type contract, cross-package interface, or engine behaviour, raise a decision record through nWave first. Label these "emerged from use" not "gaps in the original spec."
