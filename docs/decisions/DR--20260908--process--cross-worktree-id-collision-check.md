@@ -52,7 +52,7 @@ to enumerate sibling worktrees, glob each one's ID files (including uncommitted/
 colliding number can exist before either side commits), and compare against what this worktree is
 about to allocate.
 
-- Buildy already owns "checkpoints *around* wave dispatch" by charter (`buildy/SKILL.md`'s opening
+- Buildy already owns "checkpoints _around_ wave dispatch" by charter (`buildy/SKILL.md`'s opening
   line): this is squarely that, and no reimplementation of wave logic.
 - Only protects features routed through `buildy`. A wave invoked by hand, outside this skill,
   isn't covered.

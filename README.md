@@ -8,17 +8,17 @@ the standing orders in particular explain why each rule exists.
 
 ## What you get
 
-| Path                             | What it is                                                                                   |
-| -------------------------------- | -------------------------------------------------------------------------------------------- |
-| `claude/CLAUDE.md`               | Standing orders — role, workflow, operational constraints, communication rules               |
-| `claude/STYLE.md`                | Turn shape: fixed heading slots, and when structure is required at all                       |
-| `claude/PRINCIPLES.md`           | Five engineering virtues, each framed as a transition away from something                    |
-| `claude/ENGINEERING-DEFAULTS.md` | Git discipline, verification, quality gates — indexed by _event_, not by topic               |
-| `claude/hooks/`                  | Four `PreToolUse` guards: git discipline, test integrity, agent dispatch, monitoring         |
+| Path                             | What it is                                                                                             |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `claude/CLAUDE.md`               | Standing orders — role, workflow, operational constraints, communication rules                         |
+| `claude/STYLE.md`                | Turn shape: fixed heading slots, and when structure is required at all                                 |
+| `claude/PRINCIPLES.md`           | Five engineering virtues, each framed as a transition away from something                              |
+| `claude/ENGINEERING-DEFAULTS.md` | Git discipline, verification, quality gates — indexed by _event_, not by topic                         |
+| `claude/hooks/`                  | Four `PreToolUse` guards: git discipline, test integrity, agent dispatch, monitoring                   |
 | `claude/skills/`                 | Eighteen skills — `/red`, `/green`, `/refactor`, `/review`, `/ship`, `/survey`, `/watch`, `/buildy`, … |
-| `zsh/runcoms/`                   | zsh startup files symlinked into `$HOME`, plus the plugin submodules they load               |
-| `install.sh`                     | Symlinks all of the above into `~/.claude/` and `$HOME`                                      |
-| `tests/`                         | Eight bash suites covering the installer, the hooks, the skills, and zshrc                   |
+| `zsh/runcoms/`                   | zsh startup files symlinked into `$HOME`, plus the plugin submodules they load                         |
+| `install.sh`                     | Symlinks all of the above into `~/.claude/` and `$HOME`                                                |
+| `tests/`                         | Eight bash suites covering the installer, the hooks, the skills, and zshrc                             |
 
 ## Quick start
 
@@ -49,8 +49,8 @@ reimplement `nw-new`, the wave agents, `watch`, or `ship`/`gh-stack`; it only de
 state that can change out from under it (nWave installed or not, mid-feature or starting fresh,
 triaged as bug/refactor/feature), which existing skill or agent to hand off to next.
 
-Reach for this shape when a skill's job is to *route* between other skills based on state, not to
-*execute* a pipeline — a fixed procedure doesn't need a state table, and forcing one on it adds
+Reach for this shape when a skill's job is to _route_ between other skills based on state, not to
+_execute_ a pipeline — a fixed procedure doesn't need a state table, and forcing one on it adds
 indirection with no payoff. `buildy` is the current example; its `SKILL.md` is the reference to
 read, not this summary.
 

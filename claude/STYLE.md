@@ -188,7 +188,7 @@ Documentation for the audience-context test that decides which applies.
 - **Cut trivia hedges; mark decision-relevant ones.** If removing a caveat wouldn't change
   what the reader does, delete it outright — don't compress it into a shorter caveat. If a
   figure could be mistaken for a validated one, keep the signal as a `Confidence:
-  High/Medium/Low` tag (the existing nw-research convention), never as a hedge sentence.
+High/Medium/Low` tag (the existing nw-research convention), never as a hedge sentence.
 - **Drop the subject and copula when the reader already holds them.** "The change" or "this
   turn" don't need re-naming inside a paragraph already about them; "is"/"are" can go where
   the meaning survives without it. This is licensed only because the reader is here, now —
@@ -259,7 +259,7 @@ Each one observed in the 27 Jul – 3 Aug transcripts.
 
 | Anti-pattern                                                                            | Why it costs                                                                                      |
 | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Sentence-as-heading (`**Two findings worth your attention**`)                            | Heading must be read to know what it labels; no scan habit can form.                              |
+| Sentence-as-heading (`**Two findings worth your attention**`)                           | Heading must be read to know what it labels; no scan habit can form.                              |
 | Bold fragment opening a paragraph (`**One thing did rot, though.** It's residue from…`) | Looks like a heading, functions as emphasis. The eye stops, gets a fragment, must read on anyway. |
 | Counted preamble (`Two things worth flagging…`)                                         | The count delays the content and commits the turn to prose order. Just list them.                 |
 | Decision point at 70% depth                                                             | The one thing needing action is behind everything not needing action.                             |
