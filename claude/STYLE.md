@@ -29,27 +29,27 @@ say "none". Order is fixed; do not resequence for narrative effect.
 [One line: outcome + the number that proves it. No heading.]
 🤔 Decision needed: [name it in one line — full framing lives in the last slot.]
 
-## Findings          — what is true now. Facts only, one per bullet.
-## Changed           — what I did. Only for turns that touched files.
-## Now               — only what moved this turn. Omit the slot when nothing did.
-## Next              — the actions, in order, each with its command. 🙋 yours, 🤖 mine.
-## Blocked           — no action available to anyone. If you can name a command, it is Next.
-## Incidentals       — side discoveries. Finding first, attempt second. Max 3 lines.
-## Why               — reasoning, trade-offs, narrative. Everything discursive goes here.
-## Decisions needed  — options and recommendation, expanded.
+**Findings**          — what is true now. Facts only, one per bullet.
+**Changed**           — what I did. Only for turns that touched files.
+**Now**               — only what moved this turn. Omit the slot when nothing did.
+**Next**              — the actions, in order, each with its command. 🙋 yours, 🤖 mine.
+**Blocked**           — no action available to anyone. If you can name a command, it is Next.
+**Incidentals**       — side discoveries. Finding first, attempt second. Max 3 lines.
+**Why**               — reasoning, trade-offs, narrative. Everything discursive goes here.
+**Decisions needed**  — options and recommendation, expanded.
 ```
 
-`## Why` is the release valve. Prose that wants to argue a case belongs there, and it can
+`**Why**` is the release valve. Prose that wants to argue a case belongs there, and it can
 be as conversational as it likes — the reader chooses to enter it. Prose above that line
-must be skimmable, `## Incidentals` included.
+must be skimmable, `**Incidentals**` included.
 
-### Next vs Blocked
+#**Next** vs Blocked
 
 The split is by whether an action exists, not by who owns it. Work that needs your hands is
-still `## Next` — it just carries 🙋 and the exact command.
+still `**Next**` — it just carries 🙋 and the exact command.
 
 ````text
-## Next
+**Next**
 
 - 🤖 stage and commit the four files — `git add <paths> && git commit`
 
@@ -76,7 +76,7 @@ git merge claude/response-verbosity-style-f194f0
   visible, copyable if you want it, not one click from running.
 - **Name the command or it isn't Next.** "Run the installer" is a chore assigned to you;
   a copyable block is a thing you can do without reconstructing it. One command per block.
-- **`## Blocked` is only for genuinely stuck.** An unanswered question, a capability that does
+- **`**Blocked**` is only for genuinely stuck.** An unanswered question, a capability that does
   not exist, an external party. Something with a known command is never blocked, however
   inconvenient it is that I cannot run it.
 - **Say why it must be you.** One clause, next to the action — sandbox denial, a judgement
@@ -84,7 +84,7 @@ git merge claude/response-verbosity-style-f194f0
   only carrier of ownership — which the rule below forbids. The clause is what says "yours"
   in words.
 
-### Incidentals
+#**Incidentals**
 
 The slot for "found y trying x" — a discovery that wasn't the goal but is worth having.
 
@@ -95,8 +95,35 @@ The slot for "found y trying x" — a discovery that wasn't the goal but is wort
   drop it. A thing that merely happened is not an incidental.
 - **Cap: 3 bullets, one line each.** Over that it isn't incidental — it's a finding, or it
   is its own turn.
-- **Graduates out.** If it needs action it moves to `## Findings` or becomes a spawned task.
+- **Graduates out.** If it needs action it moves to `**Findings**` or becomes a spawned task.
   This slot is for things that need _knowing_, not doing.
+
+### Presenting choices
+
+Options cost per item held in the reader's head at once, not per word — that is where
+decision paralysis actually lives.
+
+- **Cap at 2–3 live options.** A fourth is rarely a distinct choice; it is usually two
+  merged into one bullet, or a variant of an option already listed.
+- **One clause of rationale per option, not a paragraph.** The full trade-off argument
+  belongs in `**Why**`, if it needs one at all — the option list is for choosing, not for
+  being persuaded.
+- **Two or more comparable dimensions → a table, not prose-per-option.** Same rule as
+  the tables heuristic below, applied specifically to choices: a table forces every
+  option onto the same axes, which is what stops one option getting three sentences and
+  another getting one.
+
+```text
+| Option                         | Cost                   | Reversibility                   | Recommended |
+| -------------------------------- | ------------------------ | ---------------------------------- | ----------- |
+| Cancel + re-arm on click         | +1 retained `CancelFn`  | Easy — isolated to one function   | ✅          |
+| Fire-and-forget (seed pattern)   | None                     | Trivial                            |             |
+```
+
+Observed 2026-09-09: a 3-option choice presented as three full paragraphs, each carrying
+its own trade-off essay, cost the reader the ability to hold all three at once — by the
+third option the first was already out of working memory. The table above is the same
+choice, same options, re-shaped.
 
 ## Visual channels
 
@@ -136,7 +163,7 @@ fenced, so a Run button appears only on work that is actually yours.
 
 ### Aligned status lines
 
-In `## Now`, `## Next` and `## Blocked`, put the marker first, the subject second, the detail
+In `**Now**`, `**Next**` and `**Blocked**`, put the marker first, the subject second, the detail
 after an em dash. The left edge becomes a column the eye runs down instead of reading.
 
 ```text
@@ -148,6 +175,25 @@ after an em dash. The left edge becomes a column the eye runs down instead of re
 Not: "19 green after adding the STYLE.md test, though trunk check can't run because of an
 EPERM on the cache, and the merge needs your terminal." Same facts, no column, must be read.
 
+## Compression
+
+Applies to prose the reader shares this session's context for — bullet content, `**Why**`.
+Not `## Documentation` types: a chat turn compresses because Dan is here, mid-session; a
+Tutorial, Reference, or ADR outlives the session and can't assume that. See `CLAUDE.md` §
+Documentation for the audience-context test that decides which applies.
+
+- **Dense list items get outlined, not chained.** A bullet with 3+ clauses joined by
+  semicolon, em dash, or comma becomes a lead bullet plus nested sub-bullets, one clause
+  each. Reflow, not rewrite — keep the original wording. Two clauses still reads as one line.
+- **Cut trivia hedges; mark decision-relevant ones.** If removing a caveat wouldn't change
+  what the reader does, delete it outright — don't compress it into a shorter caveat. If a
+  figure could be mistaken for a validated one, keep the signal as a `Confidence:
+High/Medium/Low` tag (the existing nw-research convention), never as a hedge sentence.
+- **Drop the subject and copula when the reader already holds them.** "The change" or "this
+  turn" don't need re-naming inside a paragraph already about them; "is"/"are" can go where
+  the meaning survives without it. This is licensed only because the reader is here, now —
+  it inverts for anything meant to be read without this conversation.
+
 ## Heuristics
 
 - **Lead with the outcome word.** First 25 words contain one of: done, green, red, blocked,
@@ -155,12 +201,12 @@ EPERM on the cache, and the merge needs your terminal." Same facts, no column, m
 - **Never bury the decision.** One-line decision pointer at the top; the framing at the
   bottom. Both, not either.
 - **One fact per bullet.** If a bullet has a "because" in it, the fact goes in the bullet
-  and the because goes in `## Why`.
+  and the because goes in `**Why**`.
 - **Compress the why, keep the chain.** A justification earns its length in the wrong
   decisions it prevents, not the reasoning it contains. Keep rule → mechanism → stake;
   drop the narrative between them. Test: if the short version lets a reader "fix" it the
   wrong way, the chain is not intact yet — that is the one cut that always costs.
-- **Fixed labels, not sentence headings.** `## Findings`, never `## Where the day landed`.
+- **Fixed labels, not sentence headings.** `**Findings**`, never `**Where the day landed**`.
   A heading names the slot; the content goes underneath.
 - **Ids carry a 2–5 word summary, every time.** `D93 (gap suppressed off-grid)`, never `D93`.
   Already in CLAUDE.md; restated because it is the single highest-value rule here.
@@ -172,7 +218,7 @@ EPERM on the cache, and the merge needs your terminal." Same facts, no column, m
 - **Spend bold rarely.** At one span per 60 words it is texture, not signal. One verdict word
   per line at most, and most lines need none. Reaching for bold twice in a sentence means the
   sentence has no point of emphasis at all.
-- **No recap of what I just did in prose form.** The tool calls are visible. `## Changed`
+- **No recap of what I just did in prose form.** The tool calls are visible. `**Changed**`
   lists outcomes, not narration of the process.
 - **One turn, one topic.** Multiple unrelated findings means multiple turns, or a table.
 - **Concrete before abstract.** Lead with the example, then the principle it illustrates.
@@ -190,15 +236,22 @@ Do not reinstate it, and do not substitute a running summary that grows each tur
 that must survive the session goes in a file or a delta — which is where durable state
 belongs anyway, since a footer died with the conversation regardless.
 
-`## Now` is a log, so it never repeats: capped at what moved _this_ turn, and dropped entirely
+`**Now**` is a log, so it never repeats: capped at what moved _this_ turn, and dropped entirely
 when nothing moved. An empty heading, or one restating last turn's state, is the footer in a
 new costume. A line already reported and still true is not news; it earns its place again only
 by changing.
 
-`## Next` and `## Blocked` look forward, so they may legitimately recur — an outstanding action
+`**Next**` and `**Blocked**` look forward, so they may legitimately recur — an outstanding action
 is still the answer to "what now", and dropping it loses the ask. Recurrence is not a growing
 ledger: state it in full once, then compress to one line for as long as it holds, and never
 carry an item that is no longer the next thing.
+
+The same discipline applies to a spec that accretes across several turns — a design, a plan,
+a growing set of confirmed decisions. State it in full once; after that, state only what
+changed, with a pointer back rather than a retyped whole. Observed 2026-09-09: a five-item UX
+spec, built up confirmation by confirmation across six turns, was retyped in full again on
+turn four and turn six — the reader had already confirmed items 1–3 and only needed to see
+4–5, but got the whole thing twice more regardless.
 
 ## Anti-patterns
 
@@ -206,7 +259,7 @@ Each one observed in the 27 Jul – 3 Aug transcripts.
 
 | Anti-pattern                                                                            | Why it costs                                                                                      |
 | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Sentence-as-heading (`## Two findings worth your attention`)                            | Heading must be read to know what it labels; no scan habit can form.                              |
+| Sentence-as-heading (`**Two findings worth your attention**`)                           | Heading must be read to know what it labels; no scan habit can form.                              |
 | Bold fragment opening a paragraph (`**One thing did rot, though.** It's residue from…`) | Looks like a heading, functions as emphasis. The eye stops, gets a fragment, must read on anyway. |
 | Counted preamble (`Two things worth flagging…`)                                         | The count delays the content and commits the turn to prose order. Just list them.                 |
 | Decision point at 70% depth                                                             | The one thing needing action is behind everything not needing action.                             |
@@ -237,3 +290,19 @@ Basis for the above, not a target to hit. 2683 assistant turns, 27 Jul – 3 Aug
   the `[you]` text marker, and 🤖 made six after agent-owned commands were run ahead twice in
   one session.
 - ~65k words/day at peak, across up to 32 concurrent sessions.
+
+Second sample, 2026-09-25: one session, 66 assistant turns, 6,824 words. Far smaller than the
+corpus above, but it confirms two things rather than revising them:
+
+- Every fixed-label heading rendered as `**Findings**`-style bold, 41 for 41, never the literal
+  `## Findings` this file itself had prescribed until this pass. Not a slip: a level-2 heading is
+  oversized for a one-word label in a chat bubble. The example above now matches what actually
+  happens instead of what was written down.
+- Em-dash-as-crutch and the banned filler words (`load-bearing` ×7, `bites` ×3, `quietly` ×2,
+  `delve`/`meticulous`/`underscore` ×1 each) showed up in the same session that wrote the rule
+  banning them, including in turns actively drafting that rule. A majority of roughly 172 em
+  dashes were plain connective tissue once structural and quoted uses were discounted. Logged as
+  an open limitation, not fixed by this pass: a stated rule doesn't self-enforce in live chat the
+  way a file-based check does, and no mechanism found here closes that gap.
+- Only 🙋 and 🤔 appeared all session; ✅❌🛑🤖 sat unused. Not a violation: a discussion/editing
+  session generates a narrower glyph mix than a build/test one.

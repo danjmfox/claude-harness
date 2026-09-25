@@ -31,6 +31,9 @@ message, so there is no artifact to probe; and a re-arm after a monitor timed ou
 only remaining signal was a single transition — a file set changing or not — which the completion
 notification reports just as well.
 
+Every arm-or-decline call above is a judgment made in advance, with no feedback loop. **Recording the
+cost verdict**, below, is how that judgment gets checked against what actually happened.
+
 ## Where this sits
 
 Plan mode settles the approach. The task list (`TaskCreate`/`TaskUpdate`/`TaskList`) tracks progress
@@ -68,17 +71,17 @@ for what *actually changed*. Disagreement between the last two is the finding.
    never reached, or any other race. A non-persistent Monitor still dies at its `timeout_ms`, but a
    `persistent: true` one runs until `TaskStop` or the session ends — so for that case, this step is
    not a courtesy, it is the only thing that ends it.
+6. **Log a `WATCH-COST` verdict once the watch ends** (see **Recording the cost verdict** below) —
+   every time, not only when the watch clearly paid off.
 
 ## The terminal condition is the hard part
 
-The failure mode has a name. In model checking, a property that passes because its precondition was
-never exercised is **vacuous** — the special case where the precondition is unsatisfiable is
-**antecedent failure**. Beer, Ben-David, Eisner & Rodeh found roughly 20% of formulas trivially
-valid in practice, and that trivial validity *always* indicated a real defect in the design, the
-specification, or the environment ([FMSD 18(2):141–163,
-2001](https://www.cs.toronto.edu/~chechik/courses05/csc2108/beer01.pdf)). A watch that ends on a
-condition the work never had to cause is the same defect, and carries the same implication: it is
-not a near miss, it means something is wrong.
+The failure mode has a name: in model checking, a property that passes because its precondition was
+never exercised is **vacuous**, and the special case where the precondition is unsatisfiable is
+**antecedent failure** ([Beer, Ben-David, Eisner & Rodeh, FMSD 18(2):141–163,
+2001](https://www.cs.toronto.edu/~chechik/courses05/csc2108/beer01.pdf) found trivial validity always
+indicated a real defect in the design, spec, or environment). A watch that ends on a condition the
+work never had to cause is the same defect.
 
 Ask four questions before arming. Only the third is already covered by `Monitor`'s own tool
 description; the others are where watches go blind.
@@ -98,46 +101,40 @@ description; the others are where watches go blind.
    gated tools: when the watched agent uses `WebSearch`, `WebFetch` or anything behind a permission
    prompt, a waiting dialog stops the work without touching the artifact, so the probe cannot see the
    block. Word the stall notice to list the states it cannot distinguish, never to claim a cause.
-   Observed once, n=1, one author, 2026-08-06.
 4. **Could the condition ever become true at all?** The three above ask whether the terminal is too
-   *easy*. This asks whether it is *possible*, and it fails in the opposite direction: an
-   unsatisfiable terminal runs the watch to timeout on finished work and reports a **stall** — the
-   one signal this skill says looks identical to death. Trivial validity has a mirror in trivial
-   invalidity, and only the first is famous.
+   *easy*; this asks whether it is *possible* — an unsatisfiable terminal runs to timeout on finished
+   work and reports a **stall**, which looks identical to death.
 
-   The shape that caused it: **the probe's pattern matched prose about the artifact as well as the
-   artifact.** Counting `it.skip` in two test files also counted their header comments — *"EVERY
-   SCENARIO IN THIS FILE IS `it.skip` ON PURPOSE"* — so the count had a floor of 1 and 5, and "zero
-   skips left" could never fire. Anchor the pattern to the artifact's own syntax, `^\s*it\.skip`
-   rather than `it\.skip`, so it cannot match a sentence describing the thing it counts. The same
-   trap is waiting in any count of `TODO`, of a deprecated symbol, or of a migration's old API —
-   each names itself in the very docs and instructions that discuss it.
+   The known trap: a probe's pattern matching prose *about* the artifact as well as the artifact
+   itself — counting `it.skip` markers also counted a header comment naming them, giving the count a
+   nonzero floor it could never clear. Anchor patterns to the artifact's own syntax (`^\s*it\.skip`,
+   not `it\.skip`) so they can't match a sentence describing the thing being counted. The same trap
+   waits in any count of `TODO` or a deprecated symbol — each tends to name itself in the docs
+   discussing it.
 
-   **The cheap check is to measure the baseline with the probe command itself and look at the
-   floor.** If the number cannot reach its terminal value from where it starts, the watch is
-   unsatisfiable and you find out in one command instead of twenty silent minutes.
-   Observed once, n=1, one author, 2026-08-07.
+   **Check the floor first:** measure the baseline with the probe command itself before arming. If
+   the number can't reach its terminal value from where it starts, the watch is unsatisfiable — and
+   you find out in one command instead of twenty silent minutes.
 
-**Sampling a target that is being edited underneath you** is the database read-skew problem: the
-probe can observe a state that never coherently existed. Requiring N consecutive agreeing samples
-before believing a state is the same device as Prometheus' `for` clause — pending until it holds.
-When a count moves in a direction the work should make impossible, re-sample rather than conclude;
-the movement is evidence about the observation, not about the work.
+**Sampling a target being edited underneath you** is the database read-skew problem — the probe can
+observe a state that never coherently existed. Require N consecutive agreeing samples before
+believing a state, the same device as Prometheus' `for` clause. When a count moves in a direction the
+work should make impossible, re-sample rather than conclude; the movement is evidence about the
+observation, not the work.
 
-**A probe that writes is not a probe**, and the recipes below are the likeliest place to acquire one.
-Read-skew is the probe seeing an incoherent state; this is the probe *causing* one. Running the
-project's own test suite is the natural probe and also the most likely to share mutable scratch space
-with the agent, which is running that same suite on its own schedule: one repo's gallery gate
-regenerates into `node_modules/.cache/`, so two concurrent runs corrupt each other's fixtures and the
-flake looks like the agent's bug. Prefer probes that only read — `git` plumbing, `grep`, file counts —
-and reach for the suite only after checking what it writes. Where nothing but the suite will do, at
-least know you have coupled the observer to the observed. Observed once, n=1, one author, 2026-08-07.
+**A probe that writes is not a probe.** Running the project's own test suite is the natural probe,
+but it's also the most likely to share mutable scratch space with the agent running that same suite
+on its own schedule — two concurrent runs can corrupt shared fixtures and the resulting flake looks
+like the agent's bug. Prefer probes that only read (`git` plumbing, `grep`, file counts); reach for
+the suite only after checking what it writes, and know you've coupled observer to observed if nothing
+else will do.
 
 ## Recipes
 
-All three emit on change only and have a "will not run" branch. **All three also run `pnpm test` as
-the probe** — read the write-side-effect caution above before copying one onto a repo whose suite
-touches shared scratch space.
+All emit on change only and have a "will not run" branch. The first two run `pnpm test` as the probe
+— read the write-side-effect caution above before copying either onto a repo whose suite touches
+shared scratch space. The rest read `git`, the filesystem, or a remote API instead, and don't carry
+that risk.
 
 **Test count climbing** — terminal: green, *and* RED was observed first. The `sawred` flag is what
 makes this non-vacuous; without it the watch cannot distinguish work that succeeded from a suite
@@ -173,6 +170,11 @@ Before arming, get the planned unit count from wherever the work is enumerated �
 task list, a migration manifest — and set `STEPS` as a literal. Reading it once up front beats
 probing it, because a probe on the same file the agent is writing is subject to read skew.
 
+A dynamically-derived count carries the same risk: a probe filtering on the wrong field name against
+a live schema (`step_id` when the schema actually uses `id`) matches nothing and reports the file as
+unwritten — indistinguishable from a missing file, and caught only by the commit ordering looking
+wrong on inspection, not by the probe complaining.
+
 ```bash
 prev=""; stable=0; BASE=$(git rev-list --count HEAD); STEPS=12
 while true; do
@@ -197,16 +199,14 @@ done
 ```
 
 **Work spanning files you cannot enumerate in advance** — `git diff HEAD --numstat` needs no list,
-which is the point. A hand-listed probe is blind to any file you failed to anticipate, and that is the
-specific way it goes wrong: you pick the list from where you *expect* writes, and the agent writes
-where its *instruction* pointed. Verified once, n=1 — a probe on four named files read all zeros for
-12 minutes because the agent's first write went to a fifth.
+which is the point. A hand-listed probe is blind to any file you failed to anticipate: you pick the
+list from where you *expect* writes, and the agent writes where its *instruction* pointed.
 
 **`git diff HEAD`, never bare `git diff`.** Bare `git diff` compares the working tree to the *index*,
-so anything staged vanishes from the probe — and the orchestrator committing its own work beside a
-running agent is the normal shape of these watches, not a corner case. Measured: staging one of two
-changed files took the probe from `2 changed (+4)` to `1 changed (+1)`, which reads as an agent
-*undoing* its work. `git diff HEAD` compares against the commit and is otherwise identical.
+so anything staged vanishes from the probe — and staging one changed file can make a two-file diff
+read as the agent *undoing* work. `git diff HEAD` compares against the commit and avoids this; the
+orchestrator committing its own work beside a running agent is the normal shape here, not a corner
+case.
 
 Untracked files are invisible to either form, so count them separately or the first *new* file reads
 as no progress — an agent writing a fresh document is the common case here, not the exception. With
@@ -234,22 +234,17 @@ done
 echo "watch ended — liveness only; read the agent's result for correctness"
 ```
 
-**`git -C "$REPO"`, not `cd "$REPO"` at the top.** A leading `cd` is a one-shot: it establishes the
-target once, at arming time, and every sample afterwards depends on it having worked and on the
-directory still existing. When it *doesn't* work the loop does not stop — the script continues in
-whatever directory the monitor inherited, and if that happens to be a git worktree too then every
-probe answers confidently about the wrong repo. Demonstrated: after a deliberately failed `cd`,
-`git rev-parse --git-dir` still returned a valid git dir, because the inherited cwd was itself a
-worktree. bash *does* reject `cd ""` with `null directory`, so the guard fires on an unset variable —
-but only if the guard is reached, and a `cd` whose failure is swallowed anywhere leaves no trace at
-all. `git -C` carries the target on every invocation, so a wrong or vanished path fails on every
-sample instead of once, and the "cannot run" branch does the reporting rather than a guard that has
-already scrolled past. Verified once, n=1, one author, 2026-08-07.
+**`git -C "$REPO"`, not `cd "$REPO"` at the top.** A leading `cd` is a one-shot: every sample
+afterwards depends on it having worked and the directory still existing. If it silently fails, the
+loop keeps running in whatever directory the monitor inherited — and if that's also a git worktree,
+every probe answers confidently about the wrong repo. `git -C` carries the target on every
+invocation, so a wrong or vanished path fails on every sample, and the "cannot run" branch does the
+reporting instead of a guard that already scrolled past.
 
-The other two recipes have no `cd` at all, which is the same exposure without the guard: they inherit
-whatever directory the monitor was started in. Give every `git` call `-C`; where the probe genuinely
-needs a working directory — `pnpm` resolves its project from cwd — pin it with an explicit `cd` whose
-failure branch you can point at, rather than letting it default.
+The other recipes above have no `cd` at all, which is the same exposure without even a guard. Give
+every `git` call `-C`; where a probe genuinely needs a working directory (`pnpm` resolves its project
+from cwd), pin it with an explicit `cd` whose failure branch you can point at, rather than letting it
+default.
 
 Emit basenames: knowing *which* target moved is most of the value, where a bare count says only that
 something happened. Insertions are not monotonic — an agent correcting records removes lines too — so
@@ -258,32 +253,83 @@ artefact above; a genuine shrink is ordinary work. Counting is `awk` rather than
 because `grep -c` prints `0` *and* exits 1, so the reflexive `|| echo 0` emits two zeroes and splits
 the status line in half.
 
-### What a curve showed once
+**A single known artifact, no git or test signal** — for a docs-only wave with exactly one output
+file (a feature-delta, an ADR, a roadmap draft), skip git and test entirely: poll the file's own
+size. Simpler than numstat when there's only one target.
 
-One run, n=1, and the strongest evidence the pattern has. An implementation agent watched on
-files-plus-test-count in a single status string:
-
-```text
-4 files +96  — RED 16 failing, 531 passing     ← baseline: the prior wave's tests
-5 files +137 — RED 16 failing, 531 passing     ← implementation starts
-5 files +213 — RED 16 failing, 531 passing
-6 files +233 — RED 55 failing, 492 passing     ← 39 previously-green tests break
-6 files +280 — RED 16 failing, 531 passing     ← recovered, no test file touched
-6 files +306 — GREEN 547 passing
+```bash
+FILE=/absolute/path/to/output.md
+prev=""; still=0
+while true; do
+  if [ ! -f "$FILE" ]; then cur="FILE NOT YET WRITTEN"
+  else
+    lines=$(wc -l < "$FILE" | tr -d ' '); bytes=$(wc -c < "$FILE" | tr -d ' ')
+    cur="$lines lines, $bytes bytes"
+  fi
+  [ "$cur" != "$prev" ] && { echo "$cur"; prev="$cur"; still=0; } || still=$((still+1))
+  [ "$still" -eq 10 ] && echo "no growth in ~7.5min — reading/researching, blocked on a prompt, or stalled"
+  sleep 45
+done
 ```
 
-The spike is the finding. Thirty-nine green tests broke when a rendered element was added
-unconditionally, then recovered when its condition landed. A final report shows 547 passing either
-way — whether the condition was added or the assertions were adjusted to accommodate the regression.
-Only the curve separates them, and recovery *before* green is what says the fix went into the
-implementation. Combining both probes is what made it legible: file counts alone show movement, and
-the test count alone shows the spike but not that no test file moved during the recovery.
+This is liveness only — size growing says nothing about correctness, and structural presence says
+even less: the scaffold bug that motivated question 4 above was exactly this shape, an empty
+`## Sources` heading with zero URLs satisfying a presence check. If the file is machine-parsed rather
+than prose — `roadmap.json`, a manifest — pair the size check with a validity check, because a
+growing byte count mid-write can be a truncated, unparseable document rather than progress:
 
-**State suspicion criteria in terms the sampling interval can decide.** Before this ran, the watcher
-wrote down "question a jump from 16 failing to 0 in one sample" — and that is exactly what the last
-two samples show, benignly, because a 45-second sample spans several edits. The probe resolves
-intervals, not edits. A criterion the sampling rate cannot decide will either raise a false alarm or
-be quietly dropped when it fires.
+```bash
+python3 -c "import json; json.load(open('$FILE'))" 2>/dev/null && valid=1 || valid=0
+```
+
+`valid=0` while size is still climbing is normal — the file is mid-write. `valid=0` once size has
+stopped changing for several samples is the failure worth surfacing.
+
+**External CI/PR checks settling** — not a local file or git state at all: watch a pull request's
+checks resolve. The terminal is the absence of any pending state, not a specific pass/fail — report
+the actual result once terminal rather than folding it into the loop's own condition.
+
+```bash
+PR=123
+while true; do
+  out=$(gh pr checks "$PR" 2>&1)
+  if echo "$out" | grep -qiE 'pending|queued|in_progress|expected'; then
+    cur="CHECKS PENDING"
+  else
+    cur="CHECKS SETTLED — see gh pr checks $PR for pass/fail detail"
+    echo "$cur"; break
+  fi
+  [ "$cur" != "${prev:-}" ] && echo "$cur"; prev="$cur"
+  sleep 25
+done
+```
+
+Poll no faster than every 20–30s — this is a remote API, not a local file. Prefer this hand-rolled
+loop over a packaged CI-monitoring tool where sandbox permissions are in question — a plugin that
+needs to write a PID file can fail outright in a sandboxed session where this loop still runs.
+
+### Why the curve matters, not just the endpoint
+
+A completion report showing 547 passing reads identically whether a regression was fixed in the
+implementation or the failing assertions were adjusted to match it. Only the intermediate curve
+distinguishes them:
+
+```text
+4 files +96  — RED 16 failing, 531 passing     ← baseline
+5 files +137 — RED 16 failing, 531 passing     ← implementation starts
+6 files +233 — RED 55 failing, 492 passing     ← 39 previously-green tests break
+6 files +306 — GREEN 547 passing               ← recovered, no test file touched
+```
+
+The spike and its recovery — with no test file touched during recovery — is what shows the fix
+landed in the implementation rather than the test. Combining a file-count probe with a test-count
+probe is what makes this legible: file counts alone show movement; the test count alone shows the
+spike but not that no test file moved.
+
+**The probe resolves intervals, not edits.** A single sample can span several edits, so a jump from
+16 failing to 0 in one sample is not automatically suspicious — decide state-suspicion criteria in
+terms the sampling interval can actually distinguish, or they'll either false-alarm or get silently
+ignored when they fire.
 
 ## Constraints
 
@@ -338,67 +384,87 @@ Expand past one line only when asked, or when the message itself is the finding 
 disagreement between the task list and the probe. Ties back to **Three verdicts, not two** above:
 the terseness is in the wording, not in collapsing inconclusive into done.
 
+## Recording the cost verdict
+
+The three verdicts above answer whether the *probe's own condition held*. A separate question, not
+answerable in the moment and not meant to be: was arming this watch worth what it cost, against what
+a plain `run_in_background` would have told you for free? Two costs are in play — loading this skill
+(a fixed few thousand tokens, paid once regardless of outcome) and the Monitor's own polling (scales
+with how long the watch runs). The point of tracking this per-watch, rather than deciding it once in
+the abstract, is that "When to arm one" above is a set of judgment calls with no feedback loop; this
+gives it one.
+
+**Every time a watch ends, log one line, fixed format, regardless of which correctness verdict
+applied:**
+
+`WATCH-COST: <worth-it|not-worth-it|inconclusive> — <reason, ≤15 words>`
+
+- **worth-it** — the curve or terminal condition surfaced something the completion report alone would
+  have hidden: a RED spike, a per-unit terminal a plain "green" would have missed. This is the arming
+  rule's own case, now recorded rather than merely asserted at arm-time.
+- **not-worth-it** — the watch ran cleanly to its terminal condition, but nothing it showed was
+  information a plain `run_in_background` wouldn't have given you anyway: no spike, no per-unit
+  ambiguity, no disagreement with the task list.
+- **inconclusive** — cost was paid but the watch never got the chance to answer the question: it
+  timed out before any signal, or the agent finished before the first sample that would have mattered.
+
+The format is fixed so a later pass can grep or search transcripts for `WATCH-COST:` and get an exact
+match — the same reason probe patterns in this skill are anchored to syntax rather than left to match
+prose. Log `not-worth-it` as readily as `worth-it`; it is the more useful data point for deciding
+which task shapes should skip this skill entirely.
+
 ## Losing the agent
 
-The hard limit on the pattern: **a cancelled agent is invisible to every probe.** A probe measures the
-artifact, and a dead agent simply stops touching it — identical to one that is reading, thinking or
-stuck. The three arming questions above all presuppose the agent still exists. Three were lost in one
-day and each looked the same as careful work.
+The hard limit on the pattern: **a cancelled agent is invisible to every probe.** A dead agent simply
+stops touching the artifact — identical to one that is reading, thinking, or stuck. The three arming
+questions above all presuppose the agent still exists.
 
 **The class is states no probe can see, not cancellation alone.** An agent blocked on an unanswered
-permission prompt stops touching the artifact exactly as a dead one does, so it is equally invisible —
-the difference is that it is alive and clears in one click, which is why it is worth ruling out first.
-Whether a liveness ping reaches an agent parked on a dialog is untested. Observed once, n=1, one
-author, 2026-08-06.
+permission prompt stops touching the artifact exactly as a dead one does — the difference is that
+it's alive and clears in one click, which is why it's worth ruling out first.
 
-- **The mechanism, twice observed, is the Claude Code process exiting.** Agents in flight do not
-  survive it, and no completion notification arrives. The harness's own post-restart summary cannot
-  distinguish UI stop, SDK interrupt, teardown and process exit, because none leaves a transcript
-  marker.
+- **The mechanism is the Claude Code process exiting.** Agents in flight do not survive it, and no
+  completion notification arrives. The harness's own post-restart summary cannot distinguish UI stop,
+  SDK interrupt, teardown, and process exit — none leaves a transcript marker.
 - **`SendMessage` is the only liveness test that reaches the agent itself** — everything else observes
-  its output. It returns `was stopped and won't be resumed` for a dead one, the fact no probe can
-  supply. Instruct it to *report only and not write*, or a resumed agent and an orchestrator taking
-  over collide on the same files.
+  its output. It returns `was stopped and won't be resumed` for a dead one. Instruct it to *report
+  only and not write*, or a resumed agent and an orchestrator taking over collide on the same files.
+- **That same instruction is a trap when sent mid-work rather than on resume.** Telling a
+  still-running agent to "report only, don't write" can freeze it exactly as if it had stalled — the
+  liveness check causes the condition it was checking for. If a probe goes flat right after a
+  check-in message, suspect the message's own wording before suspecting the agent.
 - **After any interrupt or restart, re-check every agent dispatched before it.**
-- **Work written incrementally to disk survives; a report does not.** A test-authoring agent lost this
-  way left most of its output usable, where a reviewer lost the same way left nothing, its entire
-  product having been the final message. Worth weighing when choosing what to delegate late in a
-  session.
+- **Work written incrementally to disk survives; a report does not.** A test-authoring agent's output
+  stays mostly usable if lost this way; a pure-reviewer agent's entire product was its final message,
+  and loses everything. Weigh this when choosing what to delegate late in a session.
 
 **When to check in** — three signals, not a clock. Duration alone picks the wrong moment in both
-directions: against the one real stall, ×10 of that agent's longest prior run would have waited nearly
-four hours on an agent already dead, while ×3 of its median would have fired at 30 minutes, inside the
-normal range for its comparable runs of 8, 10 and 23 minutes.
+directions relative to an agent's own comparable runs, so anchor to its prior range rather than a
+fixed threshold.
 
-**Precondition: first ask whether a permission prompt is waiting.** It is free to check, instantly
-clearable, and cheapest to rule out — so it comes before the signals rather than joining them.
-Observed once, n=1, one author, 2026-08-06: a background research agent sat 7.5 minutes with no writes
-because a subagent it had nested needed `WebSearch` and `WebFetch`, and every signal below was either
-ambiguous or unavailable while the true cause was in none of them.
+**Precondition: ask first whether a permission prompt is waiting.** Free to check, instantly
+clearable, cheapest to rule out — so it comes before the three signals below. A nested subagent
+needing `WebSearch`/`WebFetch` can silently stall an outer agent this way with every other signal
+ambiguous.
 
-**But the answer may not exist, so a "no" does not rule it out.** Asked directly during a stall,
-2026-08-07: *"I click on prompts so automatically now, I couldn't tell you whether there had been
-one."* Clearing a dialog is reflexive for anyone who has used the tool for a while, and reflexes do
-not lay down a memory — so "no" and "I don't know" arrive as the same answer and neither is evidence.
-Ask anyway, because a *yes* is instantly actionable and costs one click. Just do not treat a
-non-affirmative as having eliminated anything, and do not let it upgrade the remaining signals.
-n=1, one author, 2026-08-07.
+**A "no" does not rule it out.** Clearing a permission dialog becomes reflexive with practice, and
+reflexes don't lay down a memory — so "no" and "I don't know" are the same non-answer. Ask anyway,
+since a *yes* is instantly actionable, but don't treat a non-affirmative as having eliminated
+anything.
 
-Then check in when all three hold:
+Check in when all three hold:
 
-1. **No artifact movement** for the probe's stall window. Treat the notice as a prompt to look, not a
-   verdict — it produced two false alarms in one day.
+1. **No artifact movement** for the probe's stall window — a prompt to look, not a verdict; it can
+   false-alarm.
 2. **Elapsed time past that agent's own comparable range**, roughly 2–3× its longest prior run on
-   similar work. Where there are no prior runs, this signal is unavailable — say so rather than
-   inventing a threshold, and lean on the other two.
-3. **The work is visibly incomplete** — the strongest of the three, and the one worth waiting for.
-   "One of five targets written, then nothing" justifies a check-in far better than any duration,
-   because it separates an agent that is thinking from one that stopped having started.
+   similar work. With no prior runs, say the signal is unavailable rather than inventing a threshold.
+3. **The work is visibly incomplete** — the strongest signal. "One of five targets written, then
+   nothing" justifies a check-in far better than duration alone, because it separates an agent still
+   thinking from one that stopped having started.
 
-All three outcomes are worth the round trip: a reply (alive — and its answer to *"are you blocked on
-something the brief did not anticipate?"* may change what you do, not merely who does it); continued
-silence (still ambiguous, but now knowingly); or `was stopped and won't be resumed`, which is the
-whole reason this section exists.
+All three outcomes are worth the round trip: a reply (alive — and worth asking *"are you blocked on
+something the brief did not anticipate?"*); continued silence (still ambiguous, but now knowingly);
+or `was stopped and won't be resumed`, which is the whole reason this section exists.
 
 ## nWave / DES specifics
 
