@@ -237,10 +237,124 @@ test_zshrc_returns_zero_with_overlay_seam_removed() {
 	return 0
 }
 
+# Source the fixture zshrc from inside DIR and print whatever it wrote to stdout,
+# where the terminal escape sequences land.
+zshrc_stdout_from() {
+	local root="$1"
+	local dir="$2"
+
+	HOME="${root}/home" DOTFILES="${root}" PATH="${root}/stub-bin:${PATH}" \
+		zsh -f -c "
+			export DOTFILES='${root}'
+			cd '${dir}'
+			source '${root}/zsh/runcoms/zshrc'
+		" 2>/dev/null
+}
+
+make_git_repo() {
+	local dir="$1"
+	mkdir -p "${dir}"
+	git -C "${dir}" init -q
+}
+
+test_zshrc_sets_background_colour_inside_a_git_repo() {
+	local root repo out
+	root="$(add_temp_dir)"
+	make_fixture_dotfiles "${root}"
+	mkdir -p "${root}/home"
+	repo="${root}/proj"
+	make_git_repo "${repo}"
+
+	out="$(zshrc_stdout_from "${root}" "${repo}" || true)"
+
+	if [[ ${out} != *$'\e]11;#'[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]* ]]; then
+		printf '  expected an OSC 11 background colour, got: %q\n' "${out}" >&2
+		return 1
+	fi
+
+	return 0
+}
+
+osc11_colour() {
+	local out="$1"
+	[[ ${out} =~ $'\e]11;#'([0-9a-f]{6}) ]] || return 1
+	printf '%s' "${BASH_REMATCH[1]}"
+}
+
+test_zshrc_gives_each_worktree_its_own_colour() {
+	local root main wt out_main out_wt
+	root="$(add_temp_dir)"
+	make_fixture_dotfiles "${root}"
+	mkdir -p "${root}/home"
+	main="${root}/main"
+	make_git_repo "${main}"
+	git -C "${main}" -c user.name=t -c user.email=t@t commit -q --allow-empty -m init
+	wt="${root}/wt"
+	git -C "${main}" worktree add -q -b other "${wt}"
+
+	out_main="$(osc11_colour "$(zshrc_stdout_from "${root}" "${main}")")" || return 1
+	out_wt="$(osc11_colour "$(zshrc_stdout_from "${root}" "${wt}")")" || return 1
+
+	if [[ ${out_main} == "${out_wt}" ]]; then
+		printf '  main checkout and its worktree share colour %s\n' "${out_main}" >&2
+		return 1
+	fi
+
+	return 0
+}
+
+test_zshrc_restores_background_outside_a_git_repo() {
+	local root plain out
+	root="$(add_temp_dir)"
+	make_fixture_dotfiles "${root}"
+	mkdir -p "${root}/home" "${root}/plain"
+	plain="${root}/plain"
+
+	out="$(zshrc_stdout_from "${root}" "${plain}" || true)"
+
+	if [[ ${out} != *$'\e]111'* ]]; then
+		printf '  expected an OSC 111 reset, got: %q\n' "${out}" >&2
+		return 1
+	fi
+
+	return 0
+}
+
+test_zshrc_recolours_on_cd_into_a_repo() {
+	local root repo out
+	root="$(add_temp_dir)"
+	make_fixture_dotfiles "${root}"
+	mkdir -p "${root}/home" "${root}/plain"
+	repo="${root}/proj"
+	make_git_repo "${repo}"
+
+	out="$(
+		HOME="${root}/home" DOTFILES="${root}" PATH="${root}/stub-bin:${PATH}" \
+			zsh -f -c "
+				export DOTFILES='${root}'
+				cd '${root}/plain'
+				source '${root}/zsh/runcoms/zshrc'
+				printf 'AFTER_SOURCE\n'
+				cd '${repo}'
+			" 2>/dev/null || true
+	)"
+
+	if [[ ${out##*AFTER_SOURCE} != *$'\e]11;#'* ]]; then
+		printf '  cd into a repo emitted no OSC 11: %q\n' "${out##*AFTER_SOURCE}" >&2
+		return 1
+	fi
+
+	return 0
+}
+
 run_test "zshrc defines no claude wrapper without the overlay" test_zshrc_defines_no_claude_wrapper_without_the_overlay
 run_test "zshrc sources local/zshrc.local when present" test_zshrc_sources_local_overlay_when_present
 run_test "zshrc is silent when local/zshrc.local is absent" test_zshrc_is_silent_when_local_overlay_absent
 run_test "zshrc returns zero with the overlay seam removed" test_zshrc_returns_zero_with_overlay_seam_removed
+run_test "zshrc sets a background colour inside a git repo" test_zshrc_sets_background_colour_inside_a_git_repo
+run_test "zshrc gives each worktree its own colour" test_zshrc_gives_each_worktree_its_own_colour
+run_test "zshrc restores the background outside a git repo" test_zshrc_restores_background_outside_a_git_repo
+run_test "zshrc recolours on cd into a repo" test_zshrc_recolours_on_cd_into_a_repo
 
 printf '\nTests run: %d, Failures: %d\n' "${TEST_COUNT}" "${FAIL_COUNT}"
 ((FAIL_COUNT == 0))

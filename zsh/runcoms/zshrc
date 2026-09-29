@@ -88,6 +88,28 @@ if (( ${+commands[eza]} )); then
   alias lt='eza --tree'
 fi
 
+# --- Per-worktree terminal background ---
+# OSC 11 sets the background, OSC 111 restores it. Channels are held to 30-100 so the
+# background stays dark enough for light text. Terminals that ignore OSC 11 are unaffected.
+_project_bg() {
+  local root hash r g b
+  root=$(git rev-parse --show-toplevel 2>/dev/null) || {
+    printf '\e]111\e\\'
+    return 0
+  }
+  if (( ${+commands[md5]} )); then
+    hash=$(printf '%s' "$root" | md5 -q)
+  else
+    hash=$(printf '%s' "$root" | md5sum | cut -c1-32)
+  fi
+  r=$(( 16#${hash[1,2]} % 71 + 30 ))
+  g=$(( 16#${hash[3,4]} % 71 + 30 ))
+  b=$(( 16#${hash[5,6]} % 71 + 30 ))
+  printf '\e]11;#%02x%02x%02x\e\\' $r $g $b
+}
+chpwd_functions+=(_project_bg)
+_project_bg
+
 # bun completions (PNPM_HOME/BUN_INSTALL paths live in zprofile)
 if [[ -s "$HOME/.bun/_bun" ]]; then
   source "$HOME/.bun/_bun"
