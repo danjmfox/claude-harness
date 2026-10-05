@@ -59,8 +59,8 @@ read, not this summary.
 Nothing here is all-or-nothing. The standing orders are the densest single artifact and read
 independently of the install machinery — `claude/CLAUDE.md` and `claude/STYLE.md` are useful copied
 straight into your own `~/.claude/`. The hooks in `claude/hooks/` are self-contained bash and need
-only a `settings.json` entry. `red-gate.sh` also needs a per-project `.claude/red-gate.json` to
-switch on, and four registrations: `docs/howto/use-the-red-gate.md` lists them. Skills are directories; symlink or copy the ones you want.
+only a `settings.json` entry (`docs/howto/register-the-hooks.md`). `red-gate.sh` also needs a per-project `.claude/red-gate.json` to
+switch on: `docs/howto/use-the-red-gate.md` covers it. Skills are directories; symlink or copy the ones you want.
 
 ## The `local/` overlay
 

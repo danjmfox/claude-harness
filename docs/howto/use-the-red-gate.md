@@ -7,11 +7,10 @@ Background reading is in the decision record `docs/decisions/DR--20261005--proce
 ## Before you start
 
 - Run `./install.sh` so `~/.claude/hooks/red-gate.sh` exists.
-- Open `~/.claude/settings.json`.
 
 ## Steps
 
-1. Register the hook in `~/.claude/settings.json`. Add one entry to each of these four events, with the command `$HOME/.claude/hooks/red-gate.sh`: `PreToolUse` with matcher `Edit|Write|MultiEdit`, `PostToolUse` with matcher `Bash`, `PostToolUseFailure` with matcher `Bash`, and `Stop` with no matcher.
+1. Register the hook by following `docs/howto/register-the-hooks.md`, keeping the four `red-gate.sh` entries.
 2. Create `.claude/red-gate.json` in the project you want gated:
 
    ```json

@@ -2,7 +2,7 @@
 
 Type: Reference. Each entry uses the same fields: Event, Matcher, Effect, Why, Blocks, Config, Bypass, Test suite. `Why` states the reason recorded in the hook's header comment, the standing orders or a decision record. `Blocks: yes` means the hook can exit 2 and stop the tool call. `Blocks: no` means it only reports.
 
-`install.sh` symlinks each script into `~/.claude/hooks/`. It does not register them. Registration is an entry in `~/.claude/settings.json`, which this repo does not manage. Every command is `$HOME/.claude/hooks/<name>.sh`.
+`install.sh` symlinks each script into `~/.claude/hooks/`. It does not register them. Registration is an entry in `~/.claude/settings.json`, which this repo does not manage; `docs/howto/register-the-hooks.md` gives the entries. Every command is `$HOME/.claude/hooks/<name>.sh`.
 
 ## git-guard
 
