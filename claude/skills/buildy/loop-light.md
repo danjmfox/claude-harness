@@ -32,7 +32,7 @@ Approval is the only human gate. Nothing after this step asks you anything.
 Skip this step for a supervised run. Do all of it before an overnight run.
 
 - Start the session in its own git worktree on a feature branch, so the loop's commits cannot touch `main`.
-- Turn on the desktop app's keep-awake setting and plug the laptop in. A closed lid or idle sleep suspends the session, and a self-paced loop is not restored on resume.
+- In the session that will run the loop, open the three-dot menu at the top right of the desktop app and switch on "Keep computer awake". The toggle applies to that session only. Confirm it shows on before you leave, and plug the laptop in. A closed lid or idle sleep suspends the session, and a self-paced loop is not restored on resume.
 - Use a permission mode and allowlist that cover the test, `check` and commit commands the cycle runs. An unanswered permission prompt stalls the loop, and the no-progress rule cannot detect that because it only fires on iterations that run.
 - Check `~/.claude/token-budget.md` for the account's usage limits. The `/loop` documentation does not say what happens at a rate limit.
 - Climb in stages: one supervised iteration, then a run of one or two slices while you are nearby, then overnight.
