@@ -34,6 +34,19 @@ print(json.dumps({
 }))' | { bash "${GATE}" >/dev/null; } 2>&1
 }
 
+# fire_stop <project> [active] — a Stop event; "active" sets stop_hook_active as the harness does
+# when the agent is already continuing because of a Stop hook.
+fire_stop() {
+	local project="$1" active="${2:-false}"
+	P="${project}" A="${active}" python3 -c '
+import json, os
+print(json.dumps({
+    "hook_event_name": "Stop",
+    "cwd": os.environ["P"],
+    "stop_hook_active": os.environ["A"] == "true",
+}))' | { bash "${GATE}" >/dev/null; } 2>&1
+}
+
 check() {
 	local label="$1" ok="$2"
 	RUN+=1
@@ -136,6 +149,91 @@ test_state_file_is_hook_written_only() {
 
 check "the model cannot write the state file even with the gate open" \
 	"$(test_state_file_is_hook_written_only && echo yes || echo no)"
+
+edit_src() { fire "$1" PreToolUse Edit "{\"file_path\": \"$1/src/a.ts\"}" >/dev/null; }
+run_tests_fail() { fire "$1" PostToolUseFailure Bash '{"command": "npm test"}' >/dev/null; }
+run_tests_pass() { fire "$1" PostToolUse Bash '{"command": "npm test"}' >/dev/null; }
+
+test_stop_blocked_with_untested_edits() {
+	local p err status
+	p="$(new_project)"
+	write_config "${p}"
+	run_tests_fail "${p}"
+	edit_src "${p}"
+	err="$(fire_stop "${p}")"
+	status=$?
+	[[ ${status} -eq 2 && ${err} == *WHAT* && ${err} == *WHY* && ${err} == *NEXT* ]]
+}
+
+check "Stop is blocked while gated edits have no passing run after them" \
+	"$(test_stop_blocked_with_untested_edits && echo yes || echo no)"
+
+test_stop_allowed_without_edits() {
+	local p
+	p="$(new_project)"
+	write_config "${p}"
+	run_tests_fail "${p}"
+	fire_stop "${p}" >/dev/null
+}
+
+check "Stop is allowed when no gated edit has happened" \
+	"$(test_stop_allowed_without_edits && echo yes || echo no)"
+
+test_stop_allowed_after_green() {
+	local p
+	p="$(new_project)"
+	write_config "${p}"
+	run_tests_fail "${p}"
+	edit_src "${p}"
+	run_tests_pass "${p}"
+	fire_stop "${p}" >/dev/null
+}
+
+check "Stop is allowed once a passing run follows the edits" \
+	"$(test_stop_allowed_after_green && echo yes || echo no)"
+
+test_stale_green_does_not_count() {
+	local p
+	p="$(new_project)"
+	write_config "${p}"
+	run_tests_fail "${p}"
+	edit_src "${p}"
+	run_tests_pass "${p}"
+	run_tests_fail "${p}"
+	edit_src "${p}"
+	! fire_stop "${p}" >/dev/null
+}
+
+check "an edit after a green run makes Stop blocked again" \
+	"$(test_stale_green_does_not_count && echo yes || echo no)"
+
+test_stop_loop_guard_allows_and_logs() {
+	local p log
+	p="$(new_project)"
+	write_config "${p}"
+	run_tests_fail "${p}"
+	edit_src "${p}"
+	fire_stop "${p}" true >/dev/null || return 1
+	log="$(cat "${p}/.claude/red-gate-bypass.jsonl" 2>/dev/null)"
+	[[ ${log} == *unresolved-at-stop* ]]
+}
+
+check "a repeated Stop (stop_hook_active) is allowed and logged as unresolved" \
+	"$(test_stop_loop_guard_allows_and_logs && echo yes || echo no)"
+
+test_stop_bypass_allows_and_logs() {
+	local p log
+	p="$(new_project)"
+	write_config "${p}"
+	run_tests_fail "${p}"
+	edit_src "${p}"
+	RED_GATE_BYPASS="handing over mid-cycle" fire_stop "${p}" >/dev/null || return 1
+	log="$(cat "${p}/.claude/red-gate-bypass.jsonl" 2>/dev/null)"
+	[[ ${log} == *"handing over mid-cycle"* ]]
+}
+
+check "a human-set bypass allows Stop and logs the reason" \
+	"$(test_stop_bypass_allows_and_logs && echo yes || echo no)"
 
 printf '\n%d run, %d failed\n' "${RUN}" "${FAILED}"
 ((FAILED == 0))

@@ -6,7 +6,7 @@ domain: process
 changelog:
   - date: 2026-10-05
     version: 0.1.0
-    note: Initial draft, decided and applied same session
+    note: Initial draft, decided and applied same session; Stop gate added same day
 ---
 
 # RED gate hook: block gated edits until a recorded test run has failed
@@ -32,14 +32,14 @@ that never installed it.
 ### Option 3: A small hook pair with opt-in config
 
 `claude/hooks/red-gate.sh` handles `PreToolUse` on `Edit`/`Write`/`MultiEdit` and
-`PostToolUse`/`PostToolUseFailure` on `Bash`. A project opts in with `.claude/red-gate.json`
+`PostToolUse`/`PostToolUseFailure` on `Bash`, and `Stop`. A project opts in with `.claude/red-gate.json`
 (`test_command` regex, `gated` path prefixes). A failing run of the test command records `RED` in
-`.claude/red-gate-state.json`; a passing run records `GREEN`. A gated edit is allowed only in
-`RED`. Refusals use WHAT / WHY / NEXT.
+`.claude/red-gate-state.json`; a passing run records `GREEN` and clears a `dirty` flag. A gated edit is allowed only in
+`RED`, and each allowed edit sets `dirty`. `Stop` is blocked while `dirty` is set. Refusals use WHAT / WHY / NEXT.
 
 ## Decision
 
-Option 3. Three properties are deliberate:
+Option 3. Four properties are deliberate:
 
 - **Evidence, not claims.** RED comes from the harness reporting a non-zero exit
   (`PostToolUseFailure`), never from a statement by the model. The hook blocks `Edit`/`Write` to the
@@ -47,6 +47,10 @@ Option 3. Three properties are deliberate:
 - **Visible bypass.** A human sets `RED_GATE_BYPASS="<reason>"` in the session environment. Each
   gated edit allowed that way appends a line to `.claude/red-gate-bypass.jsonl`. The bypass log
   shows where the gate does not fit how the work is actually done.
+- **Unverified edits cannot be finished.** `Stop` is blocked while gated edits have no passing run
+  after them, so a green run that predates the last edit does not count. A turn with no gated edit
+  is never blocked. A repeated `Stop` (`stop_hook_active`) is allowed so the agent cannot loop, and
+  is logged as `unresolved-at-stop`. `RED_GATE_BYPASS` also allows `Stop` and logs the reason.
 - **Deterministic only.** The gate checks a script-checkable fact. It cannot tell a meaningful
   failing test from a trivial one.
 
@@ -64,4 +68,12 @@ Option 3. Three properties are deliberate:
 - **`buildy` deviation.** Built by direct execution, not through `buildy`: this repo has `.nwave/`
   (so the light path is unavailable) and is Bash rather than Vitest/TS. Behaviour is pinned by
   `tests/red-gate-tests.sh`.
-- **No `Stop` gate yet.** Blocking "done" until the suite is green is a later slice.
+- **Any matching run counts as green.** A filtered run such as `vitest one.test.ts` clears `dirty`
+  because it matches `test_command`. A separate `suite_command` field would close this and is not
+  built.
+
+## Registration
+
+Add four entries to `~/.claude/settings.json`, each running `$HOME/.claude/hooks/red-gate.sh`:
+`PreToolUse` with matcher `Edit|Write|MultiEdit`, `PostToolUse` and `PostToolUseFailure` with matcher
+`Bash`, and `Stop`. Then add `.claude/red-gate.json` to each project that opts in.

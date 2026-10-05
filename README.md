@@ -14,11 +14,11 @@ the standing orders in particular explain why each rule exists.
 | `claude/STYLE.md`                | Turn shape: fixed heading slots, and when structure is required at all                                 |
 | `claude/PRINCIPLES.md`           | Five engineering virtues, each framed as a transition away from something                              |
 | `claude/ENGINEERING-DEFAULTS.md` | Git discipline, verification, quality gates — indexed by _event_, not by topic                         |
-| `claude/hooks/`                  | Four `PreToolUse` guards: git discipline, test integrity, agent dispatch, monitoring                   |
+| `claude/hooks/`                  | Five hooks: git discipline, test integrity, agent dispatch, monitoring, opt-in RED gate                |
 | `claude/skills/`                 | Eighteen skills — `/red`, `/green`, `/refactor`, `/review`, `/ship`, `/survey`, `/watch`, `/buildy`, … |
 | `zsh/runcoms/`                   | zsh startup files symlinked into `$HOME`, plus the plugin submodules they load                         |
 | `install.sh`                     | Symlinks all of the above into `~/.claude/` and `$HOME`                                                |
-| `tests/`                         | Eight bash suites covering the installer, the hooks, the skills, and zshrc                             |
+| `tests/`                         | Nine bash suites covering the installer, the hooks, the skills, and zshrc                              |
 
 ## Quick start
 
@@ -59,7 +59,9 @@ read, not this summary.
 Nothing here is all-or-nothing. The standing orders are the densest single artifact and read
 independently of the install machinery — `claude/CLAUDE.md` and `claude/STYLE.md` are useful copied
 straight into your own `~/.claude/`. The hooks in `claude/hooks/` are self-contained bash and need
-only a `settings.json` entry. Skills are directories; symlink or copy the ones you want.
+only a `settings.json` entry. `red-gate.sh` also needs a per-project `.claude/red-gate.json` to
+switch on, and four registrations: `docs/decisions/DR--20261005--process--red-gate-hook.md` lists
+them. Skills are directories; symlink or copy the ones you want.
 
 ## The `local/` overlay
 
