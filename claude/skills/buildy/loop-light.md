@@ -48,19 +48,19 @@ Run the buildy light path for feature <feature-id> from the approved plan at <ap
 Before anything else, each iteration:
 a. If docs/feature/<feature-id>/PLAN.md does not exist, copy the approved plan there and commit it. From then on only PLAN.md counts.
 b. Read docs/feature/<feature-id>/PARKED.md. If it is missing, create it with the header "session: <session id>, started <date>, iteration cap 20, time cap 6h".
-c. Count this iteration. If a cap is reached, go to Stop.
+c. Append "iteration <n> <ISO time>" to docs/feature/<feature-id>/LOOP.log. Keep that file untracked. Read the first and last lines to get the iteration count and elapsed time. If a cap is reached, go to Stop.
 
 Then:
 1. Take the first slice in PLAN.md with Status: todo. Skip any slice whose Status is blocked or that depends on one.
-2. Run red, then green, then refactor, one test at a time. Start from the slice's named first failing test. Never write a second test before the first has failed for the right reason.
-3. Run check (lint, typecheck, coverage), not just the tests.
-4. Dispatch an independent reviewer agent (pr-review-toolkit:code-reviewer) on the slice's diff. Never review your own work inline.
-5. The slice is done only when: its tests exit 0, check passes, and the reviewer reports no blocking finding. Say which commands you ran. Then set Status: done in PLAN.md in the same commit as the slice.
+2. Run red, then green, then refactor, one test at a time. Start from the slice's named first failing test. Never write a second test before the first has failed, either on an unmet assertion or on a missing module.
+3. Run check (lint, typecheck, coverage), not just the tests. A gate the project has not configured is a gap: name it in the status line, do not count it as a failure and do not add one. A configured gate must pass.
+4. Dispatch an independent reviewer agent (pr-review-toolkit:code-reviewer) on the slice's diff. Never review your own work inline. Tell it to end with one line, exactly "BLOCKING: none" or "BLOCKING: <count>" followed by the items, and not to block on behaviour that belongs to a later slice.
+5. The slice is done only when: its tests exit 0, every configured check gate passes, and the reviewer's last line is "BLOCKING: none". Say which commands you ran. Then set Status: done in PLAN.md in the same commit as the slice.
 6. Never call AskUserQuestion. If a skill would ask, take the recommended default when the call is yours; park it when it is the human's (acceptance criteria, scope, architecture trade-off).
 7. Never edit a slice's acceptance criteria or weaken, remove or relax a failing test. If a criterion seems wrong or a test cannot pass after 3 distinct attempts, set Status: blocked and add a PARKED.md entry listing the attempts.
 8. If a task cannot be done as given, say so plainly in this turn. Do not narrow scope silently.
 9. On a permission denial or sandbox error, set the slice blocked with the exact command and error. Do not try another route to the same effect. Never write under .claude/ or ~/.claude/.
-10. Use a new commit for every change. Never amend a reported commit. Do not push and do not mark any PR ready.
+10. Use a new commit for every change. Stage named paths only; never git add -A or git add . (a hook blocks both). Never amend a reported commit. Do not push and do not mark any PR ready.
 
 PARKED.md entry format:
 ## <date> <slice> (<3-word summary>)
