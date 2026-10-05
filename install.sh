@@ -66,6 +66,7 @@ declare -a CONFIG_LINKS=(
 	"claude/hooks/monitor-guard.sh:.claude/hooks/monitor-guard.sh"
 	"claude/hooks/test-guard.sh:.claude/hooks/test-guard.sh"
 	"claude/hooks/agent-guard.sh:.claude/hooks/agent-guard.sh"
+	"claude/hooks/red-gate.sh:.claude/hooks/red-gate.sh"
 )
 
 PROFILE="work"
