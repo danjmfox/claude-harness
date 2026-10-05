@@ -5,7 +5,7 @@
 - `claude/` — the harness: standing orders (`CLAUDE.md`, `STYLE.md`, `PRINCIPLES.md`,
   `ENGINEERING-DEFAULTS.md`, `stack.md`), `hooks/`, and `skills/`
 - `install.sh` — symlinks all of it into `~/.claude/`, plus zsh runcoms
-- `tests/` — eight bash suites; they source `install.sh` directly and call individual functions
+- `tests/` — nine bash suites; they source `install.sh` directly and call individual functions
 - `local/` — optional private overlay, gitignored, absent by default. See the README
 
 ## Install script conventions
