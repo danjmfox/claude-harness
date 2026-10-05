@@ -375,7 +375,7 @@ completion; repeating that paragraph on every occurrence is the wordiness this s
   unless the result needs a qualifier ("— but see the RED spike below").
 - **No movement past the stall window:** "No movement for Ns — stalled, blocked on a prompt, or
   dead."
-- **Monitor times out without the terminal condition:** "Watch expired, inconclusive."
+- **Monitor times out without the terminal condition:** "Watch expired, inconclusive." Do not re-arm by default; the completion notification still arrives, so re-arm only if the transition you armed for is still unobserved.
 - **No safe terminal condition existed, arming declined:** "No viable probe — watching for
   completion only, no progress signal."
 - **`SendMessage` confirms the agent is gone:** "Agent confirmed dead, won't resume."
