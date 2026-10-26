@@ -12,7 +12,7 @@ Type: How-To. Goal: make Claude Code run the five scripts in `claude/hooks/`.
 ## Steps
 
 1. Optional: if you do not want the RED gate, delete the four `red-gate.sh` lines from the `WANT` list in step 2 before running it. The gate does nothing in a project without `.claude/red-gate.json` either way.
-2. Run this script. It adds only the entries that are missing, so hooks you already registered stay as they are and running it twice changes nothing. It copies the file to `~/.claude/settings.json.bak` before writing, and it keeps the file's key order and escaping so a diff shows only the added entries.
+2. Run this script. It adds only the entries that are missing, so hooks you already registered stay as they are and running it twice changes nothing. It copies the file to `~/.claude/settings.json.bak` before writing, and it keeps the file's key order, and its `&` escaping of `&`, `<` and `>` if the file uses it, so a diff shows only the added entries. Check this in step 3.
 
    ```bash
    python3 - <<'EOF'
@@ -52,17 +52,22 @@ Type: How-To. Goal: make Claude Code run the five scripts in `claude/hooks/`.
    if added:
        shutil.copy(path, path + ".bak")
        with open(path, "w") as handle:
-           text = json.dumps(settings, indent=2, sort_keys=True, ensure_ascii=False)
-           handle.write(text.replace("&", "\\u0026").replace("<", "\\u003c").replace(">", "\\u003e") + "\n")
+           text = json.dumps(settings, indent=2, ensure_ascii=False)
+           if "\\u0026" in raw:
+               text = text.replace("&", "\\u0026").replace("<", "\\u003c").replace(">", "\\u003e")
+           handle.write(text + "\n")
    print("added:" if added else "nothing to add; already registered", *added, sep="\n  ")
    EOF
    ```
 
-3. Check that the file is still valid JSON:
+3. Check that the file is still valid JSON and that the diff against the backup contains only added entries:
 
    ```bash
    python3 -m json.tool ~/.claude/settings.json > /dev/null && echo valid
+   diff ~/.claude/settings.json.bak ~/.claude/settings.json
    ```
+
+   Every changed line in the diff should be an added `>` line. A `<` line means the script rewrote something it should not have.
 
 4. Start a new session. Hooks are read at session start.
 
