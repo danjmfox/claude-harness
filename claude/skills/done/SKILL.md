@@ -77,7 +77,7 @@ Start with: [next story or task].
 If `docs/feature/` exists in the current working directory and contains active project directories, find the most recently modified one and append one line to the follow-on prompt block:
 
 ```
-Active nWave feature: [feature-id] — run /nw-continue to resume at [most recent wave].
+Active nWave feature: [feature-id] — run /nw-auto to resume from its handoff.
 ```
 
 Detect the most recent feature directory with:

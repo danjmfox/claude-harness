@@ -466,12 +466,12 @@ All three outcomes are worth the round trip: a reply (alive — and worth asking
 something the brief did not anticipate?"*); continued silence (still ambiguous, but now knowingly);
 or `was stopped and won't be resumed`, which is the whole reason this section exists.
 
-## nWave / DES specifics
+## nWave specifics
 
 Personal-practice details, deliberately kept out of the pattern above because they do not generalise:
 
-- `nw-deliver` is the per-unit case: RED→GREEN→COMMIT per roadmap step, so take `STEPS` from
-  `roadmap.json`.
-- Do not probe `deliver/execution-log.json` from Bash. A DES pre-bash hook blocks any command whose
-  text merely *contains* that filename, so the natural probe cannot be written at all — read it with
-  the `Read` tool before arming instead.
+- `nw-deliver` is the per-unit case. In nWave 4 there is no `roadmap.json` or per-step ledger, so take
+  `STEPS` from the slices in the feature's handoff (`docs/feature/<id>/handoff.json`). Not yet checked
+  against a live 4.x run.
+- `execution-log.json` is a retired nWave 3 file: nWave 4 blocks writes to it, and there is nothing
+  to probe.
