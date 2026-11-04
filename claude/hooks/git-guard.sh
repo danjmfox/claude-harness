@@ -15,6 +15,11 @@ CMD="$(printf '%s' "${INPUT}" |
 	python3 -c 'import sys,json; print(json.load(sys.stdin).get("tool_input",{}).get("command",""))' 2>/dev/null || true)"
 [[ -z ${CMD} ]] && exit 0
 
+# The payload names the session's real working directory, which differs from the hook's own $PWD
+# when the session runs in a git worktree. Absent or unreadable simply falls through to $PWD.
+PAYLOAD_CWD="$(printf '%s' "${INPUT}" |
+	python3 -c 'import sys,json; print(json.load(sys.stdin).get("cwd",""))' 2>/dev/null || true)"
+
 # The hook runs in the session's working directory, which is NOT necessarily the repo the command
 # acts on: `cd /elsewhere && git commit` and `git -C /elsewhere commit` both target another repo.
 # Resolving from $PWD reported the wrong repo and blocked an exempt one. Parse the target instead,
@@ -30,6 +35,8 @@ target_dir() {
 	dir="${dir/#\~/${HOME}}"
 	if [[ -n ${dir} && -d ${dir} ]]; then
 		printf '%s' "${dir}"
+	elif [[ -n ${PAYLOAD_CWD} && -d ${PAYLOAD_CWD} ]]; then
+		printf '%s' "${PAYLOAD_CWD}"
 	else
 		printf '%s' "${PWD}"
 	fi
