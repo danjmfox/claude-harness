@@ -23,8 +23,7 @@ Ship the current work. Follow every step in order — the ordering is the point.
    gives `gh stack` something to track from commit one when this branch is a stack layer, and lets
    CI start running early instead of only once the branch looks "finished."
    - Forges refuse a PR/MR with zero commits ahead of the base. Push whatever already exists —
-     `nw-new`'s scaffold commit, or `git commit --allow-empty -m 'wip: <slug>'` if truly nothing
-     does yet — then push the branch.
+     `git commit --allow-empty -m 'wip: <slug>'` if truly nothing does yet — then push the branch.
    - `github.*` → `gh pr create --draft --base <base> --title '<type>: <slug>' --body 'WIP'`
    - `gitlab.*` → `glab mr create --draft --target-branch <base> --title '<type>: <slug>'`
    - One PR per branch. Step 10 converts this one to ready — it does not open a second.

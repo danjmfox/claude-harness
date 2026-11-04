@@ -1,56 +1,63 @@
 ---
 name: buildy
-description: Orchestrate the standard feature-build sequence — nw-new to launch a feature, nWave's own mandatory per-wave agent dispatch, a watch during DELIVER, and gh-stack/ship for anything independently shippable. Use when starting or resuming feature work end-to-end, rather than invoking waves one at a time by hand.
+description: Orchestrate the standard feature-build sequence — nw-auto to launch or resume a Request, nWave's own mandatory role dispatch, a watch during delivery, and gh-stack/ship for anything independently shippable. Use when starting or resuming feature work end-to-end, rather than invoking nWave steps one at a time by hand.
 ---
 
 Sequence the pieces that already exist. This skill is glue, not new logic — it does not
-reimplement `nw-new`, the wave agents, `watch`, `story`/`red`/`green`/`refactor`, or `ship`/
-`gh-stack`. It stays out of nWave's own wave-to-wave sequencing (that's `nw-continue`/
-`nw-fast-forward`'s job) and only owns the checkpoints *around* it: entry, the DELIVER watch, cost
-calibration, and exit.
+reimplement `nw-auto`, the nWave roles, `watch`, `story`/`red`/`green`/`refactor`, or `ship`/
+`gh-stack`. It stays out of nWave's own sequencing (`nw-auto` chooses waves, rework and the next
+operation from evidence; nwdes keeps no workflow state) and only owns the checkpoints *around* it:
+entry, the delivery watch, cost calibration, and exit.
+
+Written for nWave 4.x (checked against v4.1.0). The 3.x commands `nw-new`, `nw-continue`,
+`nw-execute`, `nw-fast-forward`, `roadmap.json` and `execution-log.json` no longer exist.
 
 ## State machine
 
 | State              | Trigger                                             | Action                                                                                                                                                       | Owner                             | Next state                                          |
 | ------------------ | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------- |
-| `ECOSYSTEM_CHECK`   | New work described, before anything else             | `test -d .nwave` in the project root. **Present** → `REP_STYLE_CHECK` toward `TRIAGE` (nWave path). **Absent** → `REP_STYLE_CHECK` toward `LIGHT_TRIAGE` (this repo's own `story`/`red`/`green`/`refactor`/`review`/`ship` pipeline) — nWave's wave machinery and `nw-rigor` don't exist to invoke on a project that never installed it | this skill                         | `REP_STYLE_CHECK`                            |
+| `ECOSYSTEM_CHECK`   | New work described, before anything else             | `grep -q '"enabled": *true' .nwave/config.json` in the project root. **Enabled** → `REP_STYLE_CHECK` toward `TRIAGE` (nWave path). **Absent or not enabled** → `REP_STYLE_CHECK` toward `LIGHT_TRIAGE` (this repo's own `story`/`red`/`green`/`refactor`/`review`/`ship` pipeline) — nWave's roles and `nwdes` are not activated on a project that never ran `nwave-ai project enable` | this skill                         | `REP_STYLE_CHECK`                            |
 | `REP_STYLE_CHECK`   | Ecosystem check resolved, before dispatching any fix or build work | Ask once per task which learning-rep style applies. **Default, no question needed if the invocation is silent on it**: full delegate — today's behaviour, unchanged. **`predict-first`** (the only style implemented so far — see "Learning-rep styles" below): capture a one-line hypothesis before continuing — suspected cause, which file or area the fix will touch — and append it to `.claude/rep-calibration.jsonl` (create if absent) with a timestamp, the task description, the hypothesis, an inferred domain (top-level directory of the named area), and status `PENDING` | this skill                         | `TRIAGE` / `LIGHT_TRIAGE`, per the path `ECOSYSTEM_CHECK` resolved |
-| `TRIAGE`            | Ecosystem check passed (nWave present)               | Classify before invoking anything. **Obvious bug** (something is broken) → `BUG_FIX`. **Obvious refactor** (structure/quality change, no intended behaviour change) → `REFACTOR`. Everything else (new capability, ambiguous shape) → `NO_FEATURE`/`FEATURE_IN_FLIGHT` per `docs/feature/{id}/` existence | this skill                         | `BUG_FIX` / `REFACTOR` / `NO_FEATURE` / `FEATURE_IN_FLIGHT` |
+| `TRIAGE`            | Ecosystem check passed (nWave enabled)               | Classify before invoking anything. **Obvious bug, root cause unknown** → `BUG_FIX`. **Obvious refactor** (structure/quality change, no intended behaviour change) → `REFACTOR`. Everything else (new capability, ambiguous shape) → `NO_FEATURE`/`FEATURE_IN_FLIGHT` per `docs/feature/{id}/handoff.json` existence | this skill                         | `BUG_FIX` / `REFACTOR` / `NO_FEATURE` / `FEATURE_IN_FLIGHT` |
 | `LIGHT_TRIAGE`      | Ecosystem check failed (no nWave)                    | **Stack check first**: does this project actually have Vitest/TS (`package.json` naming `vitest`, a `tsconfig.json` or `.ts` sources)? `red`/`green` are written for that stack specifically — if it's absent (a Bash/Python/other project with no nWave either), say so and stop rather than invoking them blindly; this skill has no non-JS TDD cycle to fall back to. If the stack matches: needs scoping (non-trivial new capability, requirements unclear) → `story` first. Already clear (a bug, a small well-understood change) → straight to `LIGHT_CYCLE` | `story` or this skill              | `LIGHT_CYCLE`                                        |
 | `LIGHT_CYCLE`       | Scope is clear, stack confirmed                      | `red` → `green` → `refactor`, one test at a time (root `CLAUDE.md`'s TDD Rhythm — never batch multiple tests before seeing each fail individually)             | `red`/`green`/`refactor`           | `CHECK`                                              |
 | `CHECK`             | Implementation green                                 | Run the full quality gate — lint, typecheck, coverage — not just the tests `green` already proved. If `.claude/rep-calibration.jsonl` has a `PENDING` entry for this task, score it now, per "Learning-rep styles" below, before moving on                | `check`                            | `LIGHT_REVIEW`                                       |
 | `LIGHT_REVIEW`      | `check` passed                                       | Dispatch an independent reviewer agent — **not** self-review. Same independent-perspective reason nWave's `*-reviewer` gates are mandatory; running it inline as the main instance re-checking its own work is the exact case the Delegation Budget carves out as invalid | `pr-review-toolkit:code-reviewer` (Agent) | `SHIP_READY`                                  |
-| `BUG_FIX`           | Triaged as an obvious bug                            | Invoke `nw-bugfix` directly, **not** `nw-new`. `nw-new`'s own decision tree routes bugs to `/nw-root-why` only — RCA, no enforced fix. `nw-bugfix` runs that same RCA as its Phase 1, then a mandatory user-review stop (Phase 2), then delegates to `nw-deliver` for a regression-test-first fix (Phase 3) — routing through `nw-new` would reach the RCA and silently drop the other two phases | `nw-bugfix`                        | `DELIVER_PENDING` once its Phase 3 reaches `nw-deliver` |
-| `REFACTOR`          | Triaged as an obvious refactor                       | Invoke `nw-refactor` directly. `nw-new`'s decision tree has no branch for refactors at all — routed through it, an ambiguous refactor ask falls through to `DEFAULT: -> /nw-discuss`, disproportionate ceremony for a structure-only change | `nw-refactor`                      | `DELIVER_PENDING` once it's about to write changes  |
-| `NO_FEATURE`        | New work, no matching `docs/feature/{id}/`, and not triaged to `BUG_FIX`/`REFACTOR` | Invoke `nw-new`. It also routes unvalidated problems to `nw-discover` — a wave name back is not guaranteed                                                     | `nw-new`                            | `IN_WAVE` (or a routed skill, per `nw-new`'s call)   |
-| `FEATURE_IN_FLIGHT` | `docs/feature/{id}/` already exists                  | Invoke `nw-continue` instead of re-running `nw-new`                                                                                                              | `nw-continue`                       | `IN_WAVE`                                            |
-| `IN_WAVE`           | Inside DISCOVER…DISTILL                              | Nothing new here — root `CLAUDE.md`'s "nWave agents are mandatory" rule already forces the wave's own agent(s) and `*-reviewer` gate. Do not re-model this step. One carve-out: DESIGN and DISCUSS route through `ID_COLLISION_CHECK` first, below | wave's own `nw-*` agent + reviewer | `DELIVER_PENDING` once DISTILL's artifacts exist     |
-| `ID_COLLISION_CHECK` | Inside `IN_WAVE`, about to dispatch DESIGN or DISCUSS specifically — the two waves that allocate a new sequential ID (ADR number, `US-N`) | `git worktree list --porcelain` to enumerate sibling worktrees; glob each one's relevant ID files (`docs/product/architecture/adr-*.md` for DESIGN, story files for DISCUSS), including uncommitted/untracked — a collision can exist before either side commits. If a sibling worktree already holds the number this worktree is about to allocate, **surface it and stop**; never auto-bump either side's number, since a third worktree could be racing the same check | this skill | `IN_WAVE` (proceeds once clear) |
-| `DELIVER_PENDING`   | Roadmap ready, about to dispatch DELIVER             | **Cost-check gate:** if `~/.claude/token-budget.md` exists, follow it — calibrate `nw-rigor`, say the wave/agent count out loud before dispatch                 | this skill                         | `DELIVER_RUNNING`                                    |
-| `DELIVER_RUNNING`   | DELIVER dispatched                                   | `run_in_background: true`, then arm a `Monitor` per `watch`'s own "nWave / DES specifics" recipe — `STEPS` from `roadmap.json`, commit count as the terminal, never Bash-probe `execution-log.json` (`watch/SKILL.md:375-383`) | `nw-deliver`/`nw-execute` + `watch` | `SHIP_READY` (commit count == `STEPS`) or a check-in per `watch`'s stall criteria |
-| `SHIP_READY`        | nWave path: all steps COMMIT/PASS, Phase 7 already pushed one branch (`nw-deliver/SKILL.md:228-230`). Light path: `LIGHT_REVIEW` passed | If `.claude/rep-calibration.jsonl` has a `PENDING` entry for this task, score it first, per "Learning-rep styles" below — the wave path's own equivalent of `CHECK`'s scoring step, since `SHIP_READY` is the first point after the fix where the diff is settled. **Docs check next**: invoke `docs-review` before anything else, unless this run was triaged as `REFACTOR` (no intended behaviour change — nothing for docs to have drifted against). Covers `NO_FEATURE`/`FEATURE_IN_FLIGHT`, `BUG_FIX`, and the light path's `LIGHT_CYCLE` alike, since only `REFACTOR` is excluded. Then decide stacking — see below. On the light path this is just `ship`'s own step 2 draft PR (opened at branch creation) reaching step 10, ready-for-review | `docs-review` (unless `REFACTOR`) then `ship` / `gh-stack` | `SHIPPED`                                            |
-| `SHIPPED`           | PR open                                              | `/done` if the session is closing; otherwise loop to `ECOSYSTEM_CHECK` for the next piece of work                                                                | `done`                              | `ECOSYSTEM_CHECK`                                    |
+| `BUG_FIX`           | Triaged as an obvious bug with unknown root cause    | Invoke `nw-bugfix` directly. It gives the defect verbatim to the Product Owner, then runs a regression oracle observed RED on the pre-fix source, the fix, GREEN, and an examiner observation of the fix. A defect whose root cause is already established, found *during* current work, is not a Request of its own: fix it in place in the current lane (regression test RED, fix, GREEN, one separate `fix(...)` commit), per `nw-auto`'s recovery table | `nw-bugfix`                        | `DELIVER_PENDING` once it is about to dispatch the crafter |
+| `REFACTOR`          | Triaged as an obvious refactor                       | Invoke `nw-refactor` directly. It plans L1–L6 in cascade order, applies one batch, and runs the suite once at the end; a RED batch is fixed in production code, never by editing tests | `nw-refactor`                      | `DELIVER_PENDING` once it's about to write changes  |
+| `NO_FEATURE`        | New work, no matching `docs/feature/{id}/handoff.json`, and not triaged to `BUG_FIX`/`REFACTOR` | Invoke `nw-auto` with the Request. It states a working S/M/L assessment and the fastest route that keeps what the Request must leave behind; the human decides scope and trade-offs. Ask once for interactive vs autonomous at the start of an epic | `nw-auto`                           | `IN_REQUEST`                                         |
+| `FEATURE_IN_FLIGHT` | `docs/feature/{id}/handoff.json` already exists      | Invoke `nw-auto` to resume: it reads the handoff and the briefs from `nwdes document`, reusing only still-applicable role assessments. Never infer progress from a stored workflow state — there is none | `nw-auto`                           | `IN_REQUEST`                                         |
+| `IN_REQUEST`        | Inside a Request, before delivery                    | Nothing new here — root `CLAUDE.md`'s "nWave agents are mandatory" rule already forces each installed role and the `*-reviewer` gate. `nw-auto` picks the route (spine waves, host-led nwdes steps, or working directly) from what must survive the session and what a late refusal would cost, and goes upstream (`nw-discuss`, `nw-design`) only when evidence shows authority is missing. Do not re-model this step | installed `nw-*` roles + reviewers | `DELIVER_PENDING` once acceptance authority exists and a crafter is about to be dispatched |
+| `DELIVER_PENDING`   | About to dispatch the crafter                        | **Baseline line first**: `nw-auto`'s visible-baseline rule (`Baseline: GREEN/RED/INDETERMINATE — <evidence> (<scope>)`); RED or INDETERMINATE stops affected work. **Cost-check gate:** if `~/.claude/token-budget.md` exists, follow it — calibrate `nw-rigor`, say the role/agent count out loud before dispatch | this skill                         | `DELIVER_RUNNING`                                    |
+| `DELIVER_RUNNING`   | Crafter dispatched                                   | `run_in_background: true`, then arm a `Monitor` per `watch`'s own "nWave specifics" recipe — units are the slices in `docs/feature/{id}/handoff.json`. The Request is not done when the crafter finishes: it ends when the final whole-candidate review and the source-blind EXAMINE accept the composed candidate (`nw-auto` §10) | `nw-deliver` + `watch` | `SHIP_READY` (review and EXAMINE accepted) or a check-in per `watch`'s stall criteria |
+| `SHIP_READY`        | nWave path: final whole-candidate review and EXAMINE accepted. Light path: `LIGHT_REVIEW` passed | If `.claude/rep-calibration.jsonl` has a `PENDING` entry for this task, score it first, per "Learning-rep styles" below — `SHIP_READY` is the first point after the fix where the diff is settled. **Docs check next**: invoke `docs-review` before anything else, unless this run was triaged as `REFACTOR` (no intended behaviour change — nothing for docs to have drifted against). Covers `NO_FEATURE`/`FEATURE_IN_FLIGHT`, `BUG_FIX`, and the light path's `LIGHT_CYCLE` alike, since only `REFACTOR` is excluded. On the nWave path, commit any docs fix in the lane *before* the next step, because integration moves trunk. Then: **nWave path** → `nwdes lane compose`, then `nwdes lane integrate --expected <id> --candidate <id>` (see "Shipping" below). **Light path** → `ship`'s own step 2 draft PR (opened at branch creation) reaching step 10, ready-for-review | `docs-review` (unless `REFACTOR`), then `nwdes lane` (nWave) or `ship` / `gh-stack` (light) | `SHIPPED`                                            |
+| `SHIPPED`           | nWave path: lane integrated into local trunk, CI green on trunk. Light path: PR open | nWave path: **ask before pushing trunk**, then push. Then `/done` if the session is closing; otherwise loop to `ECOSYSTEM_CHECK` for the next piece of work | `done`                              | `ECOSYSTEM_CHECK`                                    |
 
-**Stacking, decided 2026-09-07: scope layers in DISTILL, not inside `nw-deliver`.**
-`nw-deliver` runs exactly as nwave-ai specifies — no patch, no fork of its commit/push mechanics
-(that option was considered and rejected: it needs its own decision record and an upstream
-nwave-ai change before any skill here could assume it exists). Instead:
+**Shipping, trial from 2026-11-04: vanilla nWave lanes, no PR on the nWave path.**
+nWave 4 has no pull-request or push step, and `nwdes` never commits or publishes. The nWave path
+follows its own flow: `nwdes lane open --feature <id>` (needs `{"lanes": {"trunk": "main"}}` in
+`.nwave/config.json`), the Request, then `nwdes lane compose` (merges trunk into the lane and prints
+EXPECTED and CANDIDATE commit ids) and `nwdes lane integrate --expected --candidate`, which
+fast-forwards local trunk and removes the lane. CI then gates the push of trunk, not the
+integration (`nw-throughput`). Ask before pushing trunk. The light path keeps `ship`'s PR flow.
 
-- **Size each layer at `nw-new` time**, not at feature grain. A layer is a roadmap-sized slice —
-  "add rule X with its acceptance test," not "the whole feature" — matching `ship/SKILL.md`'s
-  existing "name the layers before writing" rule. Run DISTILL and DELIVER exactly as specced for
-  each slice; the stacking discipline is entirely in how the roadmap gets scoped up front, not in
-  how DELIVER executes.
-- **Nothing extra needed for the draft PR** — `ship`'s step 2 now opens one immediately after any
-  branch is created, layer or not (`ship/SKILL.md`, generalised 2026-09-07 from a stack-only rule).
-  When the slice's DELIVER run reaches all-COMMIT/PASS, `ship`'s step 10 marks that same PR ready
-  — never a second one.
-- Stack via `gh-stack` (or `ship`'s "Stacked PRs" convention, `ship/SKILL.md:80-96`) across the
-  layers; merge bottom-up, `gh stack sync` after any mid-stack change, same as any other stack.
+This is a tracked exception to `ENGINEERING-DEFAULTS.md`'s "never commit to `main`": the commits
+were made and reviewed in the lane, and `integrate` only moves trunk's ref forward. Record what
+goes wrong — a rejected push to a protected `main`, a missed review, a lingering lane — as it
+happens, so the trial can be revisited with evidence
+(`docs/decisions/DR--20261104--process--nwave-lane-integration-trial.md`).
 
-Decision captured: `docs/decisions/DR--20260907--process--spec-ladder-placement.md`. The related
-org-device rigor calibration this skill's `DELIVER_PENDING` gate reads from `token-budget.md` is
-captured separately in `docs/decisions/DR--20260907--process--nwave-rigor-profile-org-device.md`.
+**Layers are sequential Requests.** `nw-auto` §6 splits work into an ordered sequence of Requests
+when values need different durable authorities or a late refusal would throw away more than one
+value: walk one Request, read its integrated commit, then start the next. Each lane opens at the
+trunk the previous Request just integrated into, so there is no stack to manage. `gh-stack` stays
+available on the light path, which has no lanes.
+
+The earlier decision, `docs/decisions/DR--20260907--process--spec-ladder-placement.md`, was made
+for nWave 3 (`nw-deliver` pushing one branch, layers scoped as roadmap-sized slices in DISTILL). Its
+premise no longer holds; it needs its own revisit. The rigor calibration this skill's
+`DELIVER_PENDING` gate reads from `token-budget.md` is captured in
+`docs/decisions/DR--20260907--process--nwave-rigor-profile-org-device.md`.
 
 ## Learning-rep styles
 
@@ -90,30 +97,30 @@ agent. Offer the prompt once per scored miss and move on either way; do not chas
 **What this does not do yet.** `human-red`, `adversarial-review`, `fault-injection`,
 `faded-scaffold`, and `explain-before-reveal` are all named but unbuilt. `adversarial-review` is
 the next-easiest — it's a checkpoint at `SHIP_READY`, same shape as this one. The other four need
-changes inside `red`/`green`/`refactor` or the wave agents themselves, which this skill does not
+changes inside `red`/`green`/`refactor` or the nWave roles themselves, which this skill does not
 reach into by design (see Constraints).
 
 ## Constraints
 
-- Do not silently widen "hand off to agents" beyond nWave's own mandatory wave dispatch —
+- Do not silently widen "hand off to agents" beyond nWave's own mandatory role dispatch —
   everything else stays under the Delegation Budget.
-- Do not invent a stacking mechanism inside `nw-deliver` — it's vendored, and patching it was
-  considered and rejected (`docs/decisions/DR--20260907--process--spec-ladder-placement.md`).
-- This skill sequences `nw-new`/`nw-continue`/`nw-bugfix`/`nw-refactor`, the existing mandatory
-  wave dispatch, `watch`, `story`/`red`/`green`/`refactor`/`check`, and `ship`/`gh-stack`. One
+- Do not invent a stacking or shipping mechanism around nWave's lane verbs — they are vendored, and
+  patching them is a separate decision. On the nWave path `buildy` runs them as specified.
+- This skill sequences `nw-auto`/`nw-bugfix`/`nw-refactor`, the existing mandatory role dispatch,
+  `watch`, `story`/`red`/`green`/`refactor`/`check`, and `ship`/`gh-stack`. One
   deliberate exception to "no new agent": `LIGHT_REVIEW` names `pr-review-toolkit:code-reviewer`
   explicitly, because the light path has no nWave `*-reviewer` gate to inherit and would otherwise
   have no independent check at all. `review/SKILL.md` itself is unchanged and still available for
   a quick manual self-review outside this pipeline — this is `buildy`'s own automated path
   choosing the independent-agent option instead of it.
 - **`TRIAGE`'s bar is "obvious."** An ambiguous bug-or-feature or refactor-or-redesign call
-  defaults to `NO_FEATURE`/`nw-new` — that's more scrutiny, not less, and matches Inference
+  defaults to `NO_FEATURE`/`nw-auto` — that's more scrutiny, not less, and matches Inference
   Discipline (don't generalise a routing decision from a thin signal).
-- **`ECOSYSTEM_CHECK` is a filesystem fact (`.nwave/` present or not), never a judgment call.**
-  Do not reach for the nWave path in a project that hasn't installed it, and do not reach for
-  `story`/`red`/`green`/`refactor` in one that has — the two pipelines are not interchangeable by
-  preference.
-- The light path has no `nw-rigor`/`token-budget.md` cost gate to read — there is no wave
+- **`ECOSYSTEM_CHECK` is a filesystem fact (`.nwave/config.json` enabled or not), never a judgment
+  call.** Do not reach for the nWave path in a project that hasn't activated it, and do not reach
+  for `story`/`red`/`green`/`refactor` in one that has — the two pipelines are not interchangeable
+  by preference.
+- The light path has no `nw-rigor`/`token-budget.md` cost gate to read — there is no nWave role
   machinery underneath it to calibrate. If `LIGHT_CYCLE` work is itself delegated to a background
   agent, the Delegation Budget and `watch` still apply on their own terms; this skill does not
   invent a light-path equivalent of `DELIVER_PENDING`.
@@ -124,13 +131,12 @@ reach into by design (see Constraints).
   wording, or a tracked decision") applies to it as much as to a new feature. The light path is
   included too, for the same reason: it has no `REFACTOR` classification to exempt it, and a
   well-understood small change can still be user-facing.
-- **`ID_COLLISION_CHECK` only covers features routed through this skill.** A wave invoked by hand,
-  outside `buildy`, isn't checked. The fix belongs in nwave-ai's own DESIGN/DISCUSS allocation
-  logic, not here — but that's vendored, generated-projection code we don't control, so the gate
-  lives in `buildy` instead (`docs/decisions/DR--20260908--process--cross-worktree-id-collision-check.md`).
+- **Sequential IDs are no longer gated here.** `nwdes lane rekey` renumbers a lane-added ADR that
+  collides with trunk. Story IDs (`US-N`) have no equivalent in v4.1.0; check sibling worktrees by
+  hand if two lanes both run DISCUSS (`docs/decisions/DR--20261104--process--retire-id-collision-gate.md`).
 - **`REP_STYLE_CHECK` asks once per task, never assumes carry-over.** A style chosen for one task
   is not a standing mode — ask again next time, even in the same session. A default nobody
-  re-confirms is the same silent drift the DES `SKIPPED` taxonomy exists to catch elsewhere.
+  re-confirms is silent drift.
 - **`predict-first` never rounds a miss up to spare the moment.** The hit-rate is only worth
   reading later if every entry in `.claude/rep-calibration.jsonl` was scored the same
   way — against the diff, not against how the hypothesis reads.

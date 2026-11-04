@@ -10,28 +10,28 @@ Read the section whose event has fired, not the whole file. "Working on an engin
 | Before dispatching a background subagent                       | Watching Long Background Work                              |
 | Writing or structuring new code                                | Code Quality · Coding Preferences · Architecture Default   |
 | Choosing which quality gates a piece of work warrants          | The Verification Stack                                     |
-| Configuring a project's nWave rigor or DES setup               | nWave Rigor Profile                                        |
+| Configuring a project's nWave rigor or setup                   | nWave Rigor Profile                                        |
 
-**Use nWave directly, not just its philosophy.** These defaults describe nWave's approach — don't approximate them ad hoc. Reach for the actual skill suite: `/nw-new` to route new work to the right wave, `/nw-buddy` for any methodology question, `/nw-continue` to resume. Wave commands (`/nw-discuss` → `/nw-design` → `/nw-distill` → `/nw-deliver`, `/nw-review`, `/nw-mutation-test`) and the custom `nw-*` agents and hooks are how the consistency and discipline get enforced — prefer them over hand-rolled equivalents.
+**Use nWave directly, not just its philosophy.** These defaults describe nWave's approach — don't approximate them ad hoc. Reach for the actual skill suite: `/nw-auto` to take a Request and choose the route (spine waves, host-led nwdes steps, or working directly — by what must survive the session and what a late refusal would cost), and to resume from the feature's handoff; `/nw-buddy` for any methodology question. Wave commands (`/nw-discuss`, `/nw-design`, `/nw-distill`, `/nw-deliver`, `/nw-review`, `/nw-mutation-test`) and the custom `nw-*` agents and hooks are how the consistency and discipline get enforced — prefer them over hand-rolled equivalents. Waves are entered when their durable authority is missing, not walked in sequence by default.
 
 ## Feature Boundaries
 
 `buildy` for anything that will generate its own requirements or decisions. Extend an existing
-`feature-delta.md` only to refine requirements already in it.
+feature's handoff only to refine requirements already in it.
 
 You have outgrown a boundary when the delta passes ~300 lines, requirement IDs run past ~E12, or you
 cannot answer "what would finalize this feature?" — split before continuing, not after.
 
 **Skipping the wizard means owning its work.** Reaching for `/red`, `/green` or `/nw-deliver`
 directly is fine for mechanical increments, but say which feature ID you are working in and which
-wave you are entering. `/nw-new` also decides the feature ID, checks for name conflicts, and routes
-bugs to `/nw-root-why` and unvalidated problems to `/nw-discover` — skip it and every increment
-silently enters at DELIVER.
+route you are taking. `/nw-auto` also states the S/M/L assessment, routes an unknown-cause defect
+to `/nw-bugfix`, and goes upstream when authority is missing — skip it and every increment
+silently enters at delivery.
 
-Wave completion is detected from artifacts, not from memory: `tests/acceptance/{id}/`,
-`deliver/execution-log.json`, `docs/product/kpi-contracts.yaml`. If a wave genuinely happened but its
-artifact does not exist, say so — and do not create the artifact just to satisfy the check, which is
-manufacturing evidence.
+Progress is read from artifacts, not from memory: the feature's handoff
+(`docs/feature/{id}/handoff.json`) and the briefs `nwdes document` renders from it; nwdes keeps no
+workflow state. If a wave genuinely happened but its record does not exist, say so — and do not
+create the record just to satisfy the check, which is manufacturing evidence.
 
 ## Engineering Defaults
 
@@ -51,7 +51,10 @@ manufacturing evidence.
   acts on what its dispatch prompt says, not on independently re-deriving a standing order it
   was never pointed at for that specific action. When delegating work whose first act might be
   a commit, state the branch requirement inline in the prompt itself — "fetch on event" alone
-  is not reliable once delegation crosses a Task-tool boundary.
+  is not reliable once delegation crosses a Task-tool boundary. **Tracked exception (trial from
+  2026-11-04):** on the nWave path, `nwdes lane integrate` fast-forwards `main` to commits already
+  made and reviewed in a lane; nothing is committed on `main` directly. Ask before pushing it
+  (`DR--20261104--process--nwave-lane-integration-trial`).
 - **Never `git add -A` or `git add .`.** Stage named paths only, so unrelated files (`.trunk/`, lint config, `.idea/`, generated output) are never swept in.
 - **Verify the push landed before deleting a branch** — `git log origin/<branch> -1`.
 - **Never rewrite or reset `main`'s ref.** If history surgery looks necessary, stop and ask.
@@ -135,14 +138,13 @@ that markdown files never did.
 
 ## nWave Rigor Profile
 
-Default rigor: most gates are on-demand, not mandatory — run them when you have tokens to spare or before a change you're uncertain about. This default assumes a personal/Pro-tier project; check the project's own context (CI config, `.nwave/des-config.json`) before assuming it applies on a work repo. **Exception: reviewer / peer-review agents always run** (see below).
+Default rigor: most gates are on-demand, not mandatory — run them when you have tokens to spare or before a change you're uncertain about. This default assumes a personal/Pro-tier project; check the project's own context (CI config, `.nwave/config.json`) before assuming it applies on a work repo. **Exception: reviewer / peer-review agents always run** (see below).
 
 - **Reviewers always run** — the paired `nw-*-reviewer` peer-review gates and `/nw-review` are mandatory, not on-demand. Rationale: they catch tangents and unfounded directions early, which saves net tokens versus discovering the detour later. Never skip a wave's reviewer gate to "stay lean" — running it *is* the lean choice.
 - Mutation testing: Stryker, target 85% kill rate on core modules — run via `/nw-mutation-test`, not as a merge gate (scope defined per project)
 - All other nWave wave commands follow the same principle: invoke explicitly, don't treat as mandatory pipeline steps
-- The DES pre-bash hook blocks ANY Bash command whose text contains `execution-log` — including `git rm` at finalize. Read it via the `Read` tool; discard it via directory-level `git rm -r deliver/`.
-- `execution-log.json` is intentionally empty for SKILL.md-only features (no compiled TDD phases to instrument)
-- `.nwave/des-config.json` MUST declare `"rigor": {"tdd_phases": ["RED", "GREEN", "COMMIT"]}` in every project using the 3-phase ADR-025 canon. Since nwave-ai v3.15, an absent `rigor.tdd_phases` defaults to the LEGACY 5-phase list (PREPARE/RED_ACCEPTANCE/RED_UNIT/GREEN/COMMIT) and `des-verify-integrity` then FAILS 3-phase execution logs (empirically confirmed 2026-06-10). Other rigor keys absent → lean on-demand defaults still apply. The file is gitignored — set it per machine/clone.
+- nWave 4 blocks Write/Edit of any `execution-log.json` (retired workflow). The old Bash-text block on `execution-log` is gone, so ordinary `git rm` works. Do not recreate the file.
+- nWave 4 has no `tdd_phases` setting and no `des-verify-integrity` (checked against v4.1.0). Project config is `.nwave/config.json`; `des-config.json` is only a legacy name. Rigor lives in the global `~/.nwave/config.json` (`rigor.profile`).
 
 ## Coding Preferences
 
