@@ -3,6 +3,9 @@ FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV SHELL=/usr/bin/zsh
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# hadolint ignore=DL3008
 RUN apt-get update -qq \
     && apt-get install -y -qq --no-install-recommends \
        zsh git curl ca-certificates \
