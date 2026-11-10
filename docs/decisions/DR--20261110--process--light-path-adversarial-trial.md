@@ -1,12 +1,15 @@
 ---
 id: DR--20261110--process--light-path-adversarial-trial
-status: proposed
+status: accepted
 dateCreated: 2026-11-10
 domain: process
 changelog:
   - date: 2026-11-10
     version: 0.1.0
     note: Initial draft. Three PROPOSED changes to buildy's light path, trial plan, no pilot run yet. Owner chose general-purpose agents and no nWave dependency on the light path
+  - date: 2026-11-10
+    version: 0.2.0
+    note: Owner approved the trial. Status advanced from proposed to accepted
 ---
 
 # Trial three light-path changes in buildy: an adversarial checkpoint, independent acceptance tests, and a concurrent-work state
@@ -48,7 +51,7 @@ Labels used below: VERIFIED (observed in a source or a run this session), PROPOS
 
 ## Decision
 
-**Option 2**, pending the owner's approval of this record. The three changes:
+**Option 2**, approved by the owner on 2026-11-10. The three changes:
 
 | Change                                                    | Opportunity                                                                            | Status   |
 | --------------------------------------------------------- | -------------------------------------------------------------------------------------- | -------- |
