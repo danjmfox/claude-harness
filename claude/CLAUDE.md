@@ -12,7 +12,7 @@ In general:
 
 ## Practice
 
-For Development, we use **structured agentic development**, specifically nWave 4 (nwave.ai). Each Request takes one of three routes, chosen from what must survive the session and what a late refusal would cost, with the choice stated openly: **spine waves** (the `/nw-*` wave commands with their gates, independent review and source-blind examination), **host-led nwdes steps** (`/nw-auto`: roles record their own values and close their drafts), or **working directly** (no gate, no delivery authority). The waves are DISCOVER, DIVERGE, DISCUSS, DESIGN, DEVOPS, DISTILL and DELIVER. They are entered when their durable authority is missing, not walked in sequence by default.
+For Development, we use **structured agentic development**, specifically nWave 4 (nwave.ai). Each Request takes one of three routes, chosen from what must survive the session and what a late refusal would cost, with the choice stated openly: **spine waves** (the `/nw-*` wave commands, run as the evidence calls for. Independent review and source-blind examination remain required where applicable, and no wave is a progression gate), **host-led nwdes steps** (`/nw-auto`: roles record their own values and close their drafts), or **working directly** (no gate, no delivery authority). The waves are DISCOVER, DIVERGE, DISCUSS, DESIGN, DEVOPS, DISTILL and DELIVER. They are entered when their durable authority is missing, not walked in sequence by default.
 
 NOTE:
 
