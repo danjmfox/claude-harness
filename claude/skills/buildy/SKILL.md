@@ -22,7 +22,8 @@ Written for nWave 4.x (checked against v4.1.0). The 3.x commands `nw-new`, `nw-c
 | `LIGHT_TRIAGE`      | Ecosystem check failed (no nWave)                    | **Stack check first**: does this project actually have Vitest/TS (`package.json` naming `vitest`, a `tsconfig.json` or `.ts` sources)? `red`/`green` are written for that stack specifically — if it's absent (a Bash/Python/other project with no nWave either), say so and stop rather than invoking them blindly; this skill has no non-JS TDD cycle to fall back to. If the stack matches: needs scoping (non-trivial new capability, requirements unclear) → `story` first. Already clear (a bug, a small well-understood change) → straight to `LIGHT_CYCLE` | `story` or this skill              | `LIGHT_CYCLE`                                        |
 | `LIGHT_CYCLE`       | Scope is clear, stack confirmed                      | `red` → `green` → `refactor`, one test at a time (root `CLAUDE.md`'s TDD Rhythm — never batch multiple tests before seeing each fail individually)             | `red`/`green`/`refactor`           | `CHECK`                                              |
 | `CHECK`             | Implementation green                                 | Run the full quality gate — lint, typecheck, coverage — not just the tests `green` already proved. If `.claude/rep-calibration.jsonl` has a `PENDING` entry for this task, score it now, per "Learning-rep styles" below, before moving on                | `check`                            | `LIGHT_REVIEW`                                       |
-| `LIGHT_REVIEW`      | `check` passed                                       | Dispatch an independent reviewer agent — **not** self-review. Same independent-perspective reason nWave's `*-reviewer` gates are mandatory; running it inline as the main instance re-checking its own work is the exact case the Delegation Budget carves out as invalid | `pr-review-toolkit:code-reviewer` (Agent) | `SHIP_READY`                                  |
+| `LIGHT_REVIEW`      | `check` passed                                       | Dispatch an independent reviewer agent — **not** self-review. Same independent-perspective reason nWave's `*-reviewer` gates are mandatory; running it inline as the main instance re-checking its own work is the exact case the Delegation Budget carves out as invalid | `pr-review-toolkit:code-reviewer` (Agent) | `ADVERSARIAL_CHECK` (when eligible) or `SHIP_READY` |
+| `ADVERSARIAL_CHECK` | `LIGHT_REVIEW` passed. **PROPOSED, opt-in, default off** — see "Adversarial check" below | **Eligible only if** the change has an external surface (CLI, parser, API) with a source of truth independent of the code, and `docs/target-profile.md` exists. Refactor and prose changes skip. Not eligible → no question, straight on. Eligible → ask once per task; no answer means off. On yes: say the dispatch out loud, and if `~/.claude/token-budget.md` exists follow it as the cost check. Dispatch one `general-purpose` agent (model: opus) with the artefact paths, the run command and the target profile, withholding the implementation reasoning, the tests and the review report. It attacks through inputs only, never edits, and returns reproducible failures. Each failure the tests let through is an oracle gap (the tests did not check what was promised): add it as a test observed RED, repair, GREEN, one `fix(...)` commit. Re-run `check` after a repair. `buildy` adds no loop of its own: one pass per task | adversarial agent (Agent) | `SHIP_READY` |
 | `BUG_FIX`           | Triaged as an obvious bug with unknown root cause    | Invoke `nw-bugfix` directly. It gives the defect verbatim to the Product Owner, then runs a regression oracle observed RED on the pre-fix source, the fix, GREEN, and an examiner observation of the fix. A defect whose root cause is already established, found *during* current work, is not a Request of its own: fix it in place in the current lane (regression test RED, fix, GREEN, one separate `fix(...)` commit), per `nw-auto`'s recovery table | `nw-bugfix`                        | `DELIVER_PENDING` once it is about to dispatch the crafter |
 | `REFACTOR`          | Triaged as an obvious refactor                       | Invoke `nw-refactor` directly. It plans L1–L6 in cascade order, applies one batch, and runs the suite once at the end; a RED batch is fixed in production code, never by editing tests | `nw-refactor`                      | `DELIVER_PENDING` once it's about to write changes  |
 | `NO_FEATURE`        | New work, no matching `docs/feature/{id}/handoff.json`, and not triaged to `BUG_FIX`/`REFACTOR` | Invoke `nw-auto` with the Request. It states a working S/M/L assessment and the fastest route that keeps what the Request must leave behind; the human decides scope and trade-offs. Ask once for interactive vs autonomous at the start of an epic | `nw-auto`                           | `IN_REQUEST`                                         |
@@ -30,7 +31,7 @@ Written for nWave 4.x (checked against v4.1.0). The 3.x commands `nw-new`, `nw-c
 | `IN_REQUEST`        | Inside a Request, before delivery                    | Nothing new here — root `CLAUDE.md`'s "nWave agents are mandatory" rule already forces each installed role and the `*-reviewer` gate. `nw-auto` picks the route (spine waves, host-led nwdes steps, or working directly) from what must survive the session and what a late refusal would cost, and goes upstream (`nw-discuss`, `nw-design`) only when evidence shows authority is missing. Do not re-model this step | installed `nw-*` roles + reviewers | `DELIVER_PENDING` once acceptance authority exists and a crafter is about to be dispatched |
 | `DELIVER_PENDING`   | About to dispatch the crafter                        | **Baseline line first**: `nw-auto`'s visible-baseline rule (`Baseline: GREEN/RED/INDETERMINATE — <evidence> (<scope>)`); RED or INDETERMINATE stops affected work. **Cost-check gate:** if `~/.claude/token-budget.md` exists, follow it — calibrate `nw-rigor`, say the role/agent count out loud before dispatch | this skill                         | `DELIVER_RUNNING`                                    |
 | `DELIVER_RUNNING`   | Crafter dispatched                                   | `run_in_background: true`, then arm a `Monitor` per `watch`'s own "nWave specifics" recipe — units are the slices in `docs/feature/{id}/handoff.json`. The Request is not done when the crafter finishes: it ends when the final whole-candidate review and the source-blind EXAMINE accept the composed candidate (`nw-auto` §10) | `nw-deliver` + `watch` | `SHIP_READY` (review and EXAMINE accepted) or a check-in per `watch`'s stall criteria |
-| `SHIP_READY`        | nWave path: final whole-candidate review and EXAMINE accepted. Light path: `LIGHT_REVIEW` passed | If `.claude/rep-calibration.jsonl` has a `PENDING` entry for this task, score it first, per "Learning-rep styles" below — `SHIP_READY` is the first point after the fix where the diff is settled. **Docs check next**: invoke `docs-review` before anything else, unless this run was triaged as `REFACTOR` (no intended behaviour change — nothing for docs to have drifted against). Covers `NO_FEATURE`/`FEATURE_IN_FLIGHT`, `BUG_FIX`, and the light path's `LIGHT_CYCLE` alike, since only `REFACTOR` is excluded. On the nWave path, commit any docs fix in the lane *before* the next step, because integration moves trunk. Then: **nWave path** → `nwdes lane compose`, then `nwdes lane integrate --expected <id> --candidate <id>` (see "Shipping" below). **Light path** → `ship`'s own step 2 draft PR (opened at branch creation) reaching step 10, ready-for-review | `docs-review` (unless `REFACTOR`), then `nwdes lane` (nWave) or `ship` / `gh-stack` (light) | `SHIPPED`                                            |
+| `SHIP_READY`        | nWave path: final whole-candidate review and EXAMINE accepted. Light path: `LIGHT_REVIEW` passed, and `ADVERSARIAL_CHECK` done or skipped | If `.claude/rep-calibration.jsonl` has a `PENDING` entry for this task, score it first, per "Learning-rep styles" below — `SHIP_READY` is the first point after the fix where the diff is settled. **Docs check next**: invoke `docs-review` before anything else, unless this run was triaged as `REFACTOR` (no intended behaviour change — nothing for docs to have drifted against). Covers `NO_FEATURE`/`FEATURE_IN_FLIGHT`, `BUG_FIX`, and the light path's `LIGHT_CYCLE` alike, since only `REFACTOR` is excluded. On the nWave path, commit any docs fix in the lane *before* the next step, because integration moves trunk. Then: **nWave path** → `nwdes lane compose`, then `nwdes lane integrate --expected <id> --candidate <id>` (see "Shipping" below). **Light path** → `ship`'s own step 2 draft PR (opened at branch creation) reaching step 10, ready-for-review | `docs-review` (unless `REFACTOR`), then `nwdes lane` (nWave) or `ship` / `gh-stack` (light) | `SHIPPED`                                            |
 | `SHIPPED`           | nWave path: lane integrated into local trunk, CI green on trunk. Light path: PR open | nWave path: **ask before pushing trunk**, then push. Then `/done` if the session is closing; otherwise loop to `ECOSYSTEM_CHECK` for the next piece of work | `done`                              | `ECOSYSTEM_CHECK`                                    |
 
 **Shipping, trial from 2026-11-04: vanilla nWave lanes, no PR on the nWave path.**
@@ -94,11 +95,25 @@ ask — do not write — whether this gap is worth a dated entry there, in the d
 The whole point of the file is the generation effect: a lesson the agent writes only sharpens the
 agent. Offer the prompt once per scored miss and move on either way; do not chase a "no."
 
-**What this does not do yet.** `human-red`, `adversarial-review`, `fault-injection`,
-`faded-scaffold`, and `explain-before-reveal` are all named but unbuilt. `adversarial-review` is
-the next-easiest — it's a checkpoint at `SHIP_READY`, same shape as this one. The other four need
-changes inside `red`/`green`/`refactor` or the nWave roles themselves, which this skill does not
-reach into by design (see Constraints).
+**What this does not do yet.** `human-red`, `fault-injection`, `faded-scaffold`, and
+`explain-before-reveal` are named but unbuilt. They need changes inside `red`/`green`/`refactor` or
+the nWave roles themselves, which this skill does not reach into by design (see Constraints).
+`adversarial-review` is built as the PROPOSED `ADVERSARIAL_CHECK` state, light path only.
+
+## Adversarial check
+
+PROPOSED, untested until piloted (`docs/decisions/DR--20261110--process--light-path-adversarial-trial.md`).
+`review` and EXAMINE confirm that agreed promises were kept. This checkpoint tries to break the
+change against a source of truth that is independent of the artefact.
+
+- **Needs a `docs/target-profile.md`, written by a human.** Nothing generates it. Sections: system
+  under test, how to run it, knobs, source of truth, hostile traits, attack list. Without one the
+  state is skipped, not improvised.
+- **Measure: yield.** Record findings the check made that `LIGHT_REVIEW` had accepted past. A
+  check that finds nothing in three eligible tasks is evidence to drop it.
+- **Origin.** Modelled on the `sniper` agent in `swarm-of-experts-demo`. One recorded run there
+  found 5 findings after a validator PASS; that is one data point, not a rate. Its claim that
+  self-review is "measured" to be worse has no source in that repository's `sources.md`: NOT KNOWN.
 
 ## Constraints
 
@@ -113,6 +128,10 @@ reach into by design (see Constraints).
   have no independent check at all. `review/SKILL.md` itself is unchanged and still available for
   a quick manual self-review outside this pipeline — this is `buildy`'s own automated path
   choosing the independent-agent option instead of it.
+- **`ADVERSARIAL_CHECK` would be a second agent exception (PROPOSED).** In the swarm, the sniper's
+  blindness to the builder's reasoning and the validator's tests is enforced by hooks. Here it is
+  enforced only by what the dispatch prompt withholds, so a leak would go unnoticed. The state is
+  opt-in and gated by the cost check for that reason.
 - **`TRIAGE`'s bar is "obvious."** An ambiguous bug-or-feature or refactor-or-redesign call
   defaults to `NO_FEATURE`/`nw-auto` — that's more scrutiny, not less, and matches Inference
   Discipline (don't generalise a routing decision from a thin signal).
@@ -123,7 +142,8 @@ reach into by design (see Constraints).
 - The light path has no `nw-rigor`/`token-budget.md` cost gate to read — there is no nWave role
   machinery underneath it to calibrate. If `LIGHT_CYCLE` work is itself delegated to a background
   agent, the Delegation Budget and `watch` still apply on their own terms; this skill does not
-  invent a light-path equivalent of `DELIVER_PENDING`.
+  invent a light-path equivalent of `DELIVER_PENDING`. The one exception is the PROPOSED
+  `ADVERSARIAL_CHECK`, which reads `token-budget.md` before its own dispatch.
 - **`SHIP_READY`'s docs-review gate excludes only `REFACTOR`.** A refactor has no intended
   behaviour change by definition, so there's nothing for docs to have drifted against. A bug fix
   is included on purpose — fixing behaviour is exactly the kind of change that leaves docs
