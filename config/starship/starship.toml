@@ -59,6 +59,9 @@ symbol = " "
 
 [git_commit]
 tag_symbol = '  '
+only_detached = false
+commit_hash_length = 7
+format = '[ $hash$tag]($style) '
 
 [golang]
 symbol = " "
