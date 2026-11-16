@@ -1,5 +1,19 @@
 "$schema" = 'https://starship.rs/config-schema.json'
 
+format = '$username$hostname$directory${custom.primary}${custom.worktree}$git_branch$git_commit$git_state$git_metrics$git_status$all'
+
+[custom.primary]
+when = 'git rev-parse --git-common-dir >/dev/null 2>&1 && [ "$(git rev-parse --git-dir)" = "$(git rev-parse --git-common-dir)" ]'
+command = 'echo primary'
+format = '[ \[$output\]]($style) '
+style = 'green'
+
+[custom.worktree]
+when = 'git rev-parse --git-common-dir >/dev/null 2>&1 && [ "$(git rev-parse --git-dir)" != "$(git rev-parse --git-common-dir)" ]'
+command = 'echo "wt:$(basename "$(git rev-parse --show-toplevel)")"'
+format = '[ \[$output\]]($style) '
+style = 'bold yellow'
+
 [aws]
 symbol = " "
 
