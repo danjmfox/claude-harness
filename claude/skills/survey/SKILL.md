@@ -19,6 +19,7 @@ This is a read-only pass. Do not suggest changes. Run the repo's own gates only 
 
 Read broadly before forming opinions. In parallel where possible:
 
+- Ref: run `git fetch -q`, then `git rev-list --count HEAD..origin/<default>`. When the count is above 0, read through `git show origin/<default>:<path>` and `git grep ... origin/<default>` instead of the working tree, and name the surveyed ref in the report title. If the fetch fails, list it under "What I could not check".
 - Root files: `README.md`, `package.json` / `pyproject.toml` / `go.mod` / `Cargo.toml`, `CHANGELOG.md`, `.mise.toml`, `Makefile`, `docker-compose.yml`
 - CI/CD: `.github/workflows/`, `.gitlab-ci.yml`, `.travis.yml`
 - Config: `.eslintrc*`, `tsconfig.json`, `trunk.yaml`, `vitest.config.*`, `prettier.config.*`
@@ -51,7 +52,8 @@ Is the complexity appropriate for the problem? Look for unnecessary abstraction 
 
 ### Relevance
 Look for dead areas: unused dependencies, commented-out code, unreferenced files, stale branches, features in docs but absent from code.
-- **Skipped-test inventory.** Search for the framework's skip markers (`.skip(`, `xit(`, `@pytest.mark.skip`, `t.Skip(`, `it.todo`), not the bare word `skip`. Read each match and classify it as *abandoned* (no condition, no ticket, old) or *conditional* (env variable, missing fixture, platform guard). Report both counts and the rule used to classify.
+- **Skipped-test inventory.** Search for the framework's skip markers, not the bare word `skip`. Use fixed strings (`git grep -nF -e '.skip(' -e '.todo(' -e skipIf -e runIf`; add `@pytest.mark.skip` or `t.Skip(` for other stacks) and keep the leading `.` so `earlyExit(` does not match `it(`. On macOS, `git grep -E` returns nothing for `\b` and `\w` with no error, so use `-F`, `-w` or `[[:space:]]` instead. A zero or a handful in a repo with an obvious skip convention is a signal to re-run with another pattern.
+  Read each match and classify it as *abandoned* (no condition, no ticket, old) or *conditional* (env variable, missing fixture, platform guard). Classify a conditional skip from the guard it sits behind, match by match where practical and by file at least. Report both counts, the rule used, and which of the two granularities was used.
 
 ### Idiomatic use
 Does the code use the language and framework as intended? Flag reinvented built-ins, fighting the framework, outdated patterns for the current version.
@@ -83,7 +85,7 @@ Quote the human/agent division, approval gates, and ownership rules from the gov
 Lead with a one-paragraph overall impression, then the table. Rate each dimension **Strong** / **Adequate** / **Weak** / **Absent**.
 
 ```
-## Survey: <repo name>
+## Survey: <repo name> @ <ref surveyed>
 
 <One paragraph: purpose, condition, main concerns>
 
