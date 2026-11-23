@@ -1,11 +1,19 @@
 ---
 name: survey
-description: Assess a codebase before making any changes. Covers purpose, coherence, complexity, currency, idiomatic use, tooling, module structure, and consistency between code and docs. Surfaces existing plans for future development. Use at the start of a chat to orient before touching anything.
+description: Assess a codebase before making any changes, so the reader can orient and start work. Covers purpose, coherence, complexity, currency, idiomatic use, tooling, module structure, and consistency between code and docs. Surfaces existing plans, decision-record state, work in flight, who decides what, and a first-hour reading path. Use at the start of a chat to orient before touching anything.
 ---
 
 Conduct a structured assessment of the current repository. $ARGUMENTS
 
-Do not suggest changes yet — this is a read-only orientation pass. The goal is a clear, honest picture of what we're working with.
+Type: How-To. Goal: produce an honest orientation report that a newcomer can act on.
+
+This is a read-only pass. Do not suggest changes. Run the repo's own gates only when `$ARGUMENTS` contains the word `verify` (see Verify mode).
+
+## Evidence rules
+
+- Every count states how it was obtained (command, pattern, or "read by hand"), so the reader can distrust it.
+- Every date names its source: `git` (last commit touching the file), `header` (date written in the file), or `code` (last commit touching related code). Prefer `git`. When sources disagree, report both.
+- Never report a bare `grep` hit count as a finding. Read each match and classify it.
 
 ## Step 1 — Gather signals
 
@@ -15,67 +23,74 @@ Read broadly before forming opinions. In parallel where possible:
 - CI/CD: `.github/workflows/`, `.gitlab-ci.yml`, `.travis.yml`
 - Config: `.eslintrc*`, `tsconfig.json`, `trunk.yaml`, `vitest.config.*`, `prettier.config.*`
 - Docs: `docs/`, `ADR/`, `decision-records/`, any `*.md` beyond the root
-- Plans: `.claude/task_plan.md`, `ROADMAP.md`, `TODO.md`, open issues references in code comments
+- Plans: `.claude/task_plan.md`, `ROADMAP.md`, `TODO.md`, open issue references in code comments
+- Governance: `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, `CODEOWNERS`, PR template
 - Source structure: top-level directories, module boundaries, test layout
-- Recent history: `git log --oneline -20`, `git branch -a`
-- Dependencies: check for outdated runtimes, deprecated packages, known-insecure versions
+- Recent history: `git log --oneline -20`
+- Remote branches: `git for-each-ref --sort=-committerdate --format='%(committerdate:short) %(refname:short)' refs/remotes`
+- Dependencies: outdated runtimes, deprecated packages, known-insecure versions
 
 ## Step 2 — Assess each dimension
 
-Evaluate each lens. Be honest and specific — note both strengths and weaknesses.
+Evaluate each lens. Be honest and specific, noting strengths and weaknesses.
 
 ### Purpose
-Is the project's purpose clearly stated? Does the README explain who it's for, what it does, and how to get started? Does the code match that description?
+Does the README state who the project is for, what it does, and how to get started? Does the code match?
 
 ### Overall coherence
-Does the codebase feel like a unified thing, or a patchwork? Are naming conventions, folder structure, and architecture consistent? Does the code tell a coherent story?
+Is the codebase unified or a patchwork? Check naming, folder structure, and architecture for consistency.
 
 ### Complexity
-Is the complexity appropriate for the problem? Look for: unnecessary abstraction layers, deeply nested logic, large files, circular dependencies, god objects/modules, config sprawl. Note any areas that are clearly harder to understand than they need to be.
+Is the complexity appropriate for the problem? Look for unnecessary abstraction layers, deeply nested logic, large files, circular dependencies, god modules, config sprawl.
 
 ### Currency
-How current is the stack?
-- Runtime versions (Node, Python, Go, etc.) vs. current LTS/stable
-- Framework and major dependency versions — significantly behind?
-- Last meaningful commit — is this actively maintained or quietly stale?
-- CI/CD approach — modern, legacy, or absent?
+- Runtime and major dependency versions against current LTS/stable.
+- Last meaningful commit: actively maintained or quietly stale?
+- CI/CD approach: modern, legacy, or absent?
+- **Freshness check.** For each orientation doc (README, architecture notes, setup guides, CLAUDE.md), run `git log -1 --format=%cs -- <file>` and compare with the date in its header and with `git log -1 --format=%cs -- <related code dir>`. Call a doc stale only when the git date trails the related code. A stale header over a current body is a header problem, not a doc problem. Bulk commits (formatters, renames) make git dates optimistic; note it when several files share one date.
 
 ### Relevance
-Are there dead areas? Look for: unused dependencies (`depcheck` signals, obvious orphans), commented-out code blocks, unreferenced files, stale branches, features mentioned in docs but absent from code.
+Look for dead areas: unused dependencies, commented-out code, unreferenced files, stale branches, features in docs but absent from code.
+- **Skipped-test inventory.** Search for the framework's skip markers (`.skip(`, `xit(`, `@pytest.mark.skip`, `t.Skip(`, `it.todo`), not the bare word `skip`. Read each match and classify it as *abandoned* (no condition, no ticket, old) or *conditional* (env variable, missing fixture, platform guard). Report both counts and the rule used to classify.
 
 ### Idiomatic use
-Does the code use the language and framework the way they're meant to be used? Flag: reinventing built-ins, fighting the framework, outdated patterns for the current version (e.g., class components in a modern React codebase, callbacks where async/await is idiomatic).
+Does the code use the language and framework as intended? Flag reinvented built-ins, fighting the framework, outdated patterns for the current version.
 
 ### Contemporary approach
-Beyond idiom — does the overall approach reflect current thinking? Consider: architectural patterns, state management, API design, auth, observability, error handling strategy.
+Does the overall approach reflect current thinking in architecture, state management, API design, auth, observability, and error handling?
 
 ### Tools
-Assess the toolchain: package manager, task runner, linter, formatter, test framework, CI provider. Are they well-configured? Are there obvious gaps (no linter, no tests, no CI)?
+Assess package manager, task runner, linter, formatter, test framework, CI provider. Note gaps (no linter, no tests, no CI). Check that CI path filters and globs cover every source tree.
 
 ### Module structure
-Are module/package boundaries clear and sensible? Is there a coherent separation of concerns? Any obvious coupling that should be decoupled, or splits that add friction without benefit?
+Are module boundaries clear? Is there coupling that should be decoupled, or splits that add friction?
 
 ### Consistency — code and documentation
-Does the code match what the docs say? Are naming, patterns, and conventions applied consistently across the codebase, or are there seams where different eras or contributors diverge? Is the test style consistent?
+Does the code match the docs? Confirm README setup steps (runtime version, install, hook commands) match what CI requires. Check whether conventions hold across eras and contributors, and whether test style is uniform.
 
 ### Future plans
-Surface any signals of intended direction:
-- `.claude/task_plan.md` or `.claude/` files
-- `ROADMAP.md`, `TODO.md`, `CHANGELOG.md` (Unreleased section)
-- TODO/FIXME/HACK comments in source (sample — don't list exhaustively)
-- Open decision records or RFCs
-- Long-lived branches with unreleased work
+Surface signals of intended direction:
+- `.claude/` plan files, `ROADMAP.md`, `TODO.md`, the `CHANGELOG.md` Unreleased section
+- TODO/FIXME/HACK comments (sample; do not list exhaustively)
+- **Decision-record census.** Count records by status (frontmatter or header `Status`). List each Proposed record with its last git edit date and age in days; flag any older than 30 days. Report the count method.
+- **Work in flight.** Group open remote branches by topic prefix, with last commit date. For each branch from the last 30 days, run `git diff --stat origin/<default>...<branch>` and note the files it touches.
+
+### Who decides what
+Quote the human/agent division, approval gates, and ownership rules from the governance files in Step 1. List open decisions (Proposed records, unresolved RFCs). Write "none found" when the repo states none.
 
 ## Step 3 — Summarise
 
-Present findings as a structured report. Lead with a one-paragraph overall impression, then cover each dimension.
-
-Use this rating for each dimension: **Strong** / **Adequate** / **Weak** / **Absent**
+Lead with a one-paragraph overall impression, then the table. Rate each dimension **Strong** / **Adequate** / **Weak** / **Absent**.
 
 ```
 ## Survey: <repo name>
 
-<One paragraph: honest overall impression — purpose, condition, main concerns>
+<One paragraph: purpose, condition, main concerns>
+
+## First hour
+1. Read, in order: <3-5 files, one line each on why>
+2. Prove setup works: `<one command>`
+3. Daily commands: `<test>`, `<lint>`, `<build>`, `<run>`
 
 | Dimension          | Rating   | Notes |
 | ------------------ | -------- | ----- |
@@ -91,42 +106,42 @@ Use this rating for each dimension: **Strong** / **Adequate** / **Weak** / **Abs
 | Consistency        |          |       |
 
 ## Key strengths
-- <what's working well>
+- <what is working well>
 
 ## Key concerns
-- <what needs attention — be specific, not generic>
+- <specific, not generic>
 
 ## Future plans detected
-- <any roadmap signals, TODOs, plans, open work>
+- <roadmap signals, TODOs, decision-record census, work in flight>
+
+## Who decides what
+- <division, gates, open decisions>
 
 ## Suggested starting points
-<If Dan is about to make changes, which areas to look at first — or what questions to answer before touching anything>
+<Areas to look at first, or questions to answer before touching anything>
+
+## What I could not check
+- <audit, depcheck, gates, anything skipped, and why>
 ```
+
+"What I could not check" is mandatory. Write "nothing skipped" only after confirming it.
+
+## Verify mode
+
+Off by default. Enable only when `$ARGUMENTS` contains `verify` (for example, `/survey verify`). Run the repo's own gates once (the commands from First hour, plus the dependency audit if one exists), report pass or fail with the exit status, and change nothing else. Without the word `verify`, list the gates under "What I could not check".
 
 ## Constraints
 
-- Read only — do not suggest fixes, rewrites, or improvements yet
-- Be specific: name files, patterns, and versions, not generalities
-- Don't pad weak dimensions with faint praise
-- If a dimension genuinely looks good, say so briefly and move on
-- Surface ADR candidates if you notice decisions that appear undocumented but significant
-- Keep the full report skimmable — detail in the table notes, not in prose walls
+- Read only by default. Do not suggest fixes, rewrites, or improvements.
+- Name files, patterns, and versions, not generalities.
+- Do not pad weak dimensions with faint praise. If a dimension looks good, say so briefly and move on.
+- Surface decision-record candidates for decisions that look significant but undocumented.
+- Keep the report skimmable: detail in the table notes, not in prose.
 
-## Candidate additions (backlog)
+## Backlog
 
-Surfaced 2026-08-13 surveying one repo (a calendar/bookmarklet browser extension) — one data point, not yet generalized across projects. Curate before folding into the mandatory dimensions above.
-
-Generalize well — likely belong in Step 1 / Tools / Relevance / Consistency:
-- CI workflows: check `.github/workflows/*` path filters, release triggers, caching, required checks — and whether globs cover every source tree the repo actually has (a glob that only matches one of several parallel source dirs is a common miss)
-- Dependency health: run `pnpm audit`/`npm audit` and `depcheck` for unused or vulnerable deps; note pinned vs. caret ranges
-- Secrets/CI config: scan workflows and scripts for embedded credentials or ephemeral tokens
-- Docs vs. CI drift: confirm README setup steps (Node version, install/hook commands) actually match what CI requires
-- Contributor ergonomics: check `LICENSE`, `CONTRIBUTING`, `CODE_OF_CONDUCT` presence and currency
-- Decision-record staleness: verify ADRs marked Proposed/In-progress still map to current code and tests, not just that they exist
-
-Project-specific in the source survey, worth reconsidering per-project rather than as universal steps:
-- Executing the repo's actual test/build/gate commands to verify claimed gates pass locally (not just reading config) — tension with "Read only" constraint above; would need to be scoped as an explicit opt-in, not default
-- Release semantics: package version vs. tag vs. changelog consistency, build-artifact sentinel coverage
-- Locale/accessibility coverage specific to the domain (e.g. non-English locales, 24-hour clocks, ARIA on custom widgets)
-- Determinism/build-size budgets for compiled artifacts
-- Mutation testing / coverage-number reporting beyond what's already visible in CI config
+Single data point (one browser-extension repo, 2026-08-13). Promote only when a second repo shows the need.
+- Secrets scan of workflows and scripts for embedded credentials or tokens
+- Contributor files: `LICENSE`, `CONTRIBUTING`, `CODE_OF_CONDUCT` presence and currency
+- Release semantics: package version vs tag vs changelog
+- Domain-specific checks (locale, accessibility, build-size budgets, mutation testing)
