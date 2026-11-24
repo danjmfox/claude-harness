@@ -36,7 +36,7 @@ create the record just to satisfy the check, which is manufacturing evidence.
 ## Engineering Defaults
 
 - Conventional commits; trunk-based development
-- Branch lifecycle: feature branch → draft PR opened immediately (`ship` step 2) → `/check` → push → mark PR ready (`ship` step 10) → merge → `git checkout main && git pull` → `git branch -d <branch>`. Always branch from a pulled main. Never carry uncommitted work across stories.
+- Branch lifecycle: feature branch → draft PR opened immediately (`ship` step 2) → `/check` → sync with `origin/main` (Git Discipline) → push → mark PR ready (`ship` step 10) → merge → `git checkout main && git pull` → `git branch -d <branch>`. Always branch from a pulled main. Never carry uncommitted work across stories.
 - Pre-commit: where lefthook is configured, it runs `pnpm test --run` and blocks commits with failing tests. Not universal — check for a lefthook config before assuming a repo has any pre-commit gate at all
 - Pre-push: where trunk is configured, enable its `trunk-check-pre-push` action so formatting and lint drift cannot reach the remote. Prefer this over `trunk-fmt-pre-commit` on any machine where a sandboxed session commits: trunk cannot run under the Claude sandbox, so a pre-commit hook invoking it aborts every such commit
 - CI gates: dep-cruiser dependency enforcement (failing build); SAST, SBOM when applicable
@@ -56,6 +56,11 @@ create the record just to satisfy the check, which is manufacturing evidence.
   made and reviewed in a lane; nothing is committed on `main` directly. Ask before pushing it
   (`DR--20261104--process--nwave-lane-integration-trial`).
 - **Never `git add -A` or `git add .`.** Stage named paths only, so unrelated files (`.trunk/`, lint config, `.idea/`, generated output) are never swept in.
+- **Sync with `origin/main` before every push that CI will judge.** Run `git fetch origin`, then
+  `git merge origin/main` (or `git rebase origin/main` if the branch is unpushed or private), resolve
+  conflicts locally, re-run `/check`, then push. Why: CI should test the branch as it would land, not
+  a stale base. Otherwise the PR goes behind, needs "Update branch", and every check runs twice.
+  Skip the merge only when `git rev-list --count HEAD..origin/main` prints `0`.
 - **Verify the push landed before deleting a branch** — `git log origin/<branch> -1`.
 - **Never rewrite or reset `main`'s ref.** If history surgery looks necessary, stop and ask.
 - **Never squash-merge.** Merge with a merge commit, or rebase-merge. Both preserve the individual

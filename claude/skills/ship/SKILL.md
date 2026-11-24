@@ -54,7 +54,15 @@ Ship the current work. Follow every step in order — the ordering is the point.
 7. **Commit.** Conventional commit; subject says what, body says *why*. Atomic — one logical
    change per commit.
 
-8. **Push.** `git push origin <branch>`. Avoid `-u`: setting upstream writes to `.git/config`,
+8. **Sync with the base, then push.** CI should test the branch as it would land, not on a stale
+   base that later needs "Update branch" and a second full run.
+   - `git fetch origin`, then `git rev-list --count HEAD..origin/<base>` (base from step 1; for a
+     stack layer, the branch below, not the trunk).
+   - If non-zero: `git merge origin/<base>` (`git rebase` only if the branch is unpushed or
+     private, since rebasing a pushed branch needs a force-push). Resolve conflicts locally.
+   - If the merge brought in commits, re-run step 6's tests and show the output. A green run from
+     before the merge proves nothing about the merged tree.
+   - Then `git push origin <branch>`. Avoid `-u`: setting upstream writes to `.git/config`,
    which is denied in some sandboxes, and the failure is reported as if the push itself failed.
    Set tracking separately afterwards if it is wanted.
 
@@ -83,6 +91,7 @@ Ship the current work. Follow every step in order — the ordering is the point.
 - Never `git add -A` or `git add .`.
 - Never delete a branch before step 9 confirms the push.
 - Never rewrite or reset the default branch's ref. If history surgery looks necessary, stop and ask.
+- Never push without first syncing with the base (step 8).
 - Never bypass hooks with `--no-verify` — if a hook blocks, that's a finding, not an obstacle.
 
 ## Stacked PRs
