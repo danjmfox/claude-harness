@@ -6,7 +6,7 @@ domain: process
 changelog:
   - date: 2026-10-05
     version: 0.1.0
-    note: Initial draft, decided and applied same session; Stop gate added same day
+    note: Initial draft, decided and applied same session; Stop gate added same day; PostToolUseFailure assumption confirmed
 ---
 
 # RED gate hook: block gated edits until a recorded test run has failed
@@ -62,9 +62,9 @@ Option 3. Four properties are deliberate:
   into `.claude/` is not caught.
 - **Goodhart.** A trivial failing test opens the gate. Mutation testing is the usual fix and is out
   of scope here.
-- **Unverified harness assumption.** The hook assumes a non-zero Bash exit fires
-  `PostToolUseFailure`. The tests use that event name as a fixture and do not prove the harness
-  sends it.
+- **Harness assumption, now confirmed.** The hook assumes a non-zero Bash exit fires
+  `PostToolUseFailure`. The tests use that event name as a fixture, so they alone did not prove it.
+  On 2026-10-05 a failing test run in a gated project recorded `RED`, confirmed by the user.
 - **`buildy` deviation.** Built by direct execution, not through `buildy`: this repo has `.nwave/`
   (so the light path is unavailable) and is Bash rather than Vitest/TS. Behaviour is pinned by
   `tests/red-gate-tests.sh`.
